@@ -278,7 +278,56 @@ footer { margin-top: 28px; color: var(--muted); font-size: 13px; }
 .struct-k { color: var(--muted); }
 
 .note {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.how {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 12px 0 0;
+}
+
+.howto {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.howto div {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.howto b {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fbbf24;
+  color: #1a1203;
+  margin-right: 6px;
+  font-size: 13px;
+}
+@media (max-width: 800px) { .howto { grid-template-columns: 1fr; } }
+
+details.more {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #10081c;
+}
+details.more summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 14px;
 }

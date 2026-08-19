@@ -97,7 +97,7 @@ export function evaluateWorld(worldSeed, filters) {
     const { radius = 4, min = 1 } = filters.slime;
     const n = countSlimeNearOrigin(seed, radius, min);
     if (n < min) return null;
-    reasons.push(`${n} slime chunks within ${radius} of origin`);
+    reasons.push(`${n} slime chunks close to world spawn`);
   }
 
   const nearby = {};
@@ -109,7 +109,7 @@ export function evaluateWorld(worldSeed, filters) {
       if (hits.length < (req.min ?? 1)) return null;
       nearby[req.id] = hits.slice(0, 6);
       const h = hits[0];
-      reasons.push(`${cfg.name} at ${h.x}, ${h.z}`);
+      reasons.push(`${cfg.name} around ${h.x}, ${h.z}`);
     }
   }
 
@@ -135,7 +135,7 @@ export function evaluateWorld(worldSeed, filters) {
     const d = Math.hypot(sh.x, sh.z);
     if (d > max) return null;
     nearby.stronghold = [sh];
-    reasons.push(`1st stronghold ~${sh.x}, ${sh.z}`);
+    reasons.push(`stronghold around ${sh.x}, ${sh.z}`);
   }
 
   const pillars = pillarsFromPillarSeed(getPillarSeed(seed));

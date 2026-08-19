@@ -6,7 +6,7 @@ import {
   pillarsFromPillarSeed,
   getPillarSeed,
 } from "./worldgen.js";
-import { PRESETS, describePillarSpec, collectMatchingPillarSeeds } from "./finder.js";
+import { PRESETS, collectMatchingPillarSeeds } from "./finder.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -27,10 +27,9 @@ function drawPillars(svg, pillars, highlight = {}) {
   svg.appendChild(svgEl("circle", { cx, cy, r: 210, fill: "#0b0714", stroke: "rgba(192,132,252,0.18)", "stroke-width": 2 }));
   svg.appendChild(svgEl("circle", { cx, cy, r: ring, fill: "none", stroke: "rgba(103,232,249,0.18)", "stroke-dasharray": "4 6" }));
   svg.appendChild(svgEl("circle", { cx, cy, r: 22, fill: "#1e1030", stroke: "#c084fc", "stroke-width": 2 }));
-  svg.appendChild(svgEl("text", { x: cx, y: cy + 4, fill: "#e9d5ff", "font-size": 10, "text-anchor": "middle" })).textContent = "portal";
+  svg.appendChild(svgEl("text", { x: cx, y: cy + 4, fill: "#e9d5ff", "font-size": 11, "text-anchor": "middle" })).textContent = "dragon";
 
-  // End spawn hint
-  svg.appendChild(svgEl("text", { x: cx + 205, y: cy + 4, fill: "#fbbf24", "font-size": 10, "text-anchor": "start" })).textContent = "spawn →";
+  svg.appendChild(svgEl("text", { x: cx + 188, y: cy + 4, fill: "#fbbf24", "font-size": 11, "text-anchor": "start" })).textContent = "you enter →";
 
   for (const p of pillars) {
     const ang = ((p.angle - 90) * Math.PI) / 180;
@@ -84,7 +83,7 @@ function drawPillars(svg, pillars, highlight = {}) {
       "text-anchor": "middle",
       "font-weight": 600,
     });
-    hy.textContent = `Y=${p.height}`;
+    hy.textContent = p.guarded ? `${p.height} cage` : String(p.height);
     g.appendChild(hy);
     svg.appendChild(g);
   }
@@ -94,11 +93,9 @@ function fillPillarTable(tbody, pillars) {
   tbody.innerHTML = pillars
     .map(
       (p) => `<tr class="${p.guarded ? "caged" : ""}">
-        <td>${p.slot}</td>
         <td class="mono">${p.x}, ${p.z}</td>
-        <td>${p.height}</td>
-        <td>${p.radius + 1} blocks</td>
-        <td>${p.guarded ? "iron cage" : "open"}</td>
+        <td>${p.height} blocks</td>
+        <td>${p.guarded ? "yes — iron bars" : "no"}</td>
       </tr>`
     )
     .join("");
@@ -111,12 +108,13 @@ function renderInspect(data) {
   $("meta-shadow").textContent = data.shadowSeed;
   $("meta-sh").textContent = `${data.stronghold.x}, ${data.stronghold.z}`;
   $("meta-slime").textContent = String(data.slime.length);
+  $("meta-cages").textContent = "2 of 10";
 
   drawPillars($("pillar-svg"), data.pillars);
   fillPillarTable($("pillar-table"), data.pillars);
 
-  const cages = data.cages.map((p) => `(${p.x}, ${p.z}) Y=${p.height}`).join(" · ");
-  $("cage-summary").textContent = cages || "—";
+  const cages = data.cages.map((p) => `the tower at ${p.x}, ${p.z} (height ${p.height})`).join(" and ");
+  $("cage-summary").textContent = cages ? `Cages are on ${cages}.` : "—";
 
   const structRoot = $("struct-results");
   const blocks = [];
@@ -157,11 +155,11 @@ function buildSlotEditor() {
       <strong>(${slot.x}, ${slot.z})</strong>
       <select data-slot="${slot.id}" data-k="height">
         <option value="">any height</option>
-        ${PILLAR_HEIGHTS.map((h) => `<option value="${h}">Y=${h}</option>`).join("")}
+        ${PILLAR_HEIGHTS.map((h) => `<option value="${h}">${h} blocks tall</option>`).join("")}
       </select>
       <select data-slot="${slot.id}" data-k="cage">
-        <option value="">cage: any</option>
-        <option value="yes">must have cage</option>
+        <option value="">cage: either</option>
+        <option value="yes">needs a cage</option>
         <option value="no">no cage</option>
       </select>`;
     root.appendChild(card);
@@ -261,43 +259,41 @@ function updateMatchCount() {
   const spec = readPillarSpec();
   const el = $("pillar-match-count");
   if (!spec) {
-    el.textContent = "Any End layout (65,536 pillar seeds).";
+    el.textContent = "No End rules picked yet — any island is fine.";
     drawPillars($("finder-svg"), pillarsFromPillarSeed(0));
     return;
   }
   const matches = collectMatchingPillarSeeds(spec);
   if (!matches.length) {
-    el.innerHTML = `<span class="err">No Java world can have this End layout.</span> Heights are a permutation of 76–103, and only Y=79 and Y=82 are ever caged.`;
+    el.innerHTML = `<span class="err">Minecraft can’t build that End.</span> Only two cages exist, and they always sit on the 79 and 82 towers. Each height is used once.`;
     return;
   }
-  el.textContent = `${matches.length.toLocaleString()} of 65,536 End layouts match (${((matches.length / 65536) * 100).toFixed(2)}%).`;
+  el.textContent = `That End setup works. Here’s one example below.`;
   drawPillars($("finder-svg"), pillarsFromPillarSeed(matches[0]));
 }
 
 function showResults(pack) {
   const root = $("results");
   if (pack.impossible) {
-    root.innerHTML = `<p class="err">Impossible End-pillar filter. Relax a height or cage constraint.</p>`;
+    root.innerHTML = `<p class="err">That mix of tower heights and cages can’t happen in Java Edition. Turn one option off and try again.</p>`;
     return;
   }
   if (!pack.results.length) {
-    root.innerHTML = `<p>No seed in this pass. Checked ${pack.checked.toLocaleString()} candidates${
-      pack.pillarMatches != null ? ` across ${pack.pillarMatches} End layouts` : ""
-    }. Try a larger scan or fewer overworld filters.</p>`;
+    root.innerHTML = `<p>Didn’t find one this time. Uncheck a couple of extras (village + fortress + slimes all at once is picky) and try again.</p>`;
     return;
   }
   root.innerHTML = pack.results
     .map((r) => {
-      const cage = r.cages.map((c) => `(${c.x},${c.z}) Y=${c.height}`).join(" and ");
+      const cage = r.cages.map((c) => `${c.x}, ${c.z}`).join(" and ");
       return `<article class="result">
         <div class="result-head">
           <b class="mono">${r.seed}</b>
           <span>
             <button class="copy" data-copy="${r.seed}">Copy seed</button>
-            <button class="copy" data-inspect="${r.seed}">Inspect</button>
+            <button class="copy" data-inspect="${r.seed}">See the map</button>
           </span>
         </div>
-        <div class="note">Pillar seed ${r.pillarSeed} · cages ${cage}</div>
+        <div class="note">Cages at ${cage}</div>
         <ol>${(r.reasons || []).map((x) => `<li>${x}</li>`).join("")}</ol>
       </article>`;
     })
@@ -310,20 +306,22 @@ function ensureWorker() {
   worker.onmessage = (ev) => {
     const msg = ev.data;
     if (msg.type === "pillars") {
-      $("search-status").textContent = `${msg.count.toLocaleString()} End layouts to scan…`;
+      $("search-status").textContent = "Checking worlds that match your End…";
     }
     if (msg.type === "progress") {
       const max = Number($("max-checked").value) || 1_500_000;
       const pct = Math.min(100, (msg.checked / max) * 100);
       $("bar").style.width = pct + "%";
-      $("search-status").textContent = `Checked ${msg.checked.toLocaleString()} · found ${msg.found}`;
+      $("search-status").textContent = `Still looking… found ${msg.found} so far`;
     }
     if (msg.type === "done") {
       searching = false;
       $("search-btn").disabled = false;
       $("stop-btn").disabled = true;
       $("bar").style.width = "100%";
-      $("search-status").textContent = `Done. ${msg.result.results.length} seed(s), ${msg.result.checked.toLocaleString()} checked.`;
+      $("search-status").textContent = msg.result.results.length
+        ? `Found ${msg.result.results.length}. Copy one into Minecraft.`
+        : "Finished this search.";
       showResults(msg.result);
     }
   };
@@ -342,7 +340,7 @@ function startSearch() {
   const startSeed = parseSeed($("start-seed").value || "0");
   $("results").innerHTML = "";
   $("bar").style.width = "8%";
-  $("search-status").textContent = "Starting workers…";
+  $("search-status").textContent = "Looking for worlds…";
   searching = true;
   $("search-btn").disabled = true;
   $("stop-btn").disabled = false;
