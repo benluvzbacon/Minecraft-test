@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Endseed — Minecraft Java seed finder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=IBM+Plex+Mono:wght@400;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Java Edition · 1.9 – 1.21</p>
+          <h1>Endseed <span>Finder</span></h1>
+          <p class="lede">
+            Tell it how tall each End pillar should be, which crystals sit in iron cages, and what else you want near origin.
+            The search uses Minecraft’s real <span class="mono">java.util.Random</span> — not guesses.
+          </p>
+          <div class="pill-row">
+            <span class="pill">10 official pillar heights</span>
+            <span class="pill">Cages only on Y=79 &amp; Y=82</span>
+            <span class="pill">Slime · villages · ancient cities · trial chambers</span>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="Mode">
+          <button class="active" data-tab="inspect">Inspect a seed</button>
+          <button data-tab="find">Find seeds</button>
+        </nav>
+      </header>
+
+      <section id="view-inspect">
+        <div class="panel">
+          <div class="row">
+            <label class="field grow">
+              Seed (number or text)
+              <input id="seed-input" class="mono" type="text" placeholder="0  ·  -123  ·  Glitter" />
+            </label>
+            <label class="field">
+              Structure radius
+              <input id="inspect-radius" type="number" value="800" min="64" max="4000" />
+            </label>
+            <button class="btn" id="inspect-btn">Inspect</button>
+            <button class="btn secondary" id="random-seed">Random</button>
+          </div>
+          <p class="note" style="margin-top:10px">
+            Pillar geometry is exact. Structure pins are generation <em>attempts</em> (same math as Chunkbase / cubiomes).
+            Villages and temples still need the right biome, which this finder does not simulate.
+          </p>
+        </div>
+
+        <div class="stats" style="margin:16px 0">
+          <div class="stat"><span>World seed</span><b id="meta-seed" class="mono">—</b></div>
+          <div class="stat"><span>End pillar seed</span><b id="meta-pillar" class="mono">—</b></div>
+          <div class="stat"><span>48-bit structure seed</span><b id="meta-struct" class="mono">—</b></div>
+          <div class="stat"><span>Shadow seed</span><b id="meta-shadow" class="mono">—</b></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <h2>Central End island</h2>
+            <svg id="pillar-svg" viewBox="0 0 520 520" role="img" aria-label="End pillars"></svg>
+            <div class="legend">
+              <span><i class="swatch" style="background:#fbbf24"></i>Iron cage (Y=79 or 82)</span>
+              <span><i class="swatch" style="background:#c084fc"></i>Open crystal</span>
+              <span>Positions are fixed; only height / cage rotate with the seed.</span>
+            </div>
+            <p class="note" id="cage-summary"></p>
+          </div>
+          <div class="panel">
+            <h2>Pillars</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Center</th>
+                  <th>Height</th>
+                  <th>Radius</th>
+                  <th>Crystal</th>
+                </tr>
+              </thead>
+              <tbody id="pillar-table"></tbody>
+            </table>
+            <div class="stats" style="margin-top:16px; grid-template-columns:1fr 1fr">
+              <div class="stat"><span>1st stronghold (approx ±112)</span><b id="meta-sh" class="mono">—</b></div>
+              <div class="stat"><span>Slime chunks in ±8</span><b id="meta-slime">—</b></div>
+            </div>
+            <h3>Nearby structure attempts</h3>
+            <div class="struct-list" id="struct-results"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-find" class="hidden">
+        <div class="grid-2">
+          <div class="panel">
+            <h2>What should the End look like?</h2>
+            <p class="note">
+              Every world has the same ten towers: heights 76, 79, 82, 85, 88, 91, 94, 97, 100, 103.
+              The seed only shuffles which tower is which. The two cages always sit on the Y=79 and Y=82 crystals.
+            </p>
+            <div id="slot-editor" class="slot-grid"></div>
+            <div id="find-toggles" class="filters-extra" style="margin-top:12px">
+              <label class="check"><input id="flt-front-open" type="checkbox" /> Uncaged spawn-facing tower (42, 0)</label>
+              <label class="check"><input id="flt-cages-adj" type="checkbox" /> Cages on neighboring towers</label>
+              <label class="check"><input id="flt-cages-opp" type="checkbox" /> Cages opposite each other</label>
+              <label class="check"><input id="flt-tall-front" type="checkbox" /> Tallest tower (Y=103) at (42, 0)</label>
+              <label class="check"><input id="flt-short-front" type="checkbox" /> Shortest tower (Y=76) at (42, 0)</label>
+            </div>
+            <p class="note" id="pillar-match-count" style="margin-top:12px"></p>
+            <svg id="finder-svg" viewBox="0 0 520 520" style="max-height:280px"></svg>
+          </div>
+
+          <div class="panel">
+            <h2>Also find…</h2>
+            <div class="filters-extra">
+              <label class="check"><input id="flt-slime" type="checkbox" /> Slime chunks near 0,0</label>
+              <label class="check"><input data-struct="village" data-radius="280" type="checkbox" /> Village attempt near origin</label>
+              <label class="check"><input data-struct="ruined_portal" data-radius="240" type="checkbox" /> Ruined portal</label>
+              <label class="check"><input data-struct="outpost" data-radius="400" type="checkbox" /> Pillager outpost</label>
+              <label class="check"><input data-struct="swamp_hut" data-radius="500" type="checkbox" /> Swamp hut</label>
+              <label class="check"><input data-struct="ancient_city" data-radius="450" type="checkbox" /> Ancient city</label>
+              <label class="check"><input data-struct="trial_chambers" data-radius="400" type="checkbox" /> Trial chambers</label>
+              <label class="check"><input data-struct="monument" data-radius="600" type="checkbox" /> Ocean monument</label>
+              <label class="check"><input data-struct="fortress" data-radius="220" type="checkbox" /> Nether fortress</label>
+              <label class="check"><input data-struct="bastion" data-radius="260" type="checkbox" /> Bastion remnant</label>
+              <label class="check"><input data-struct="end_city" data-radius="1600" type="checkbox" /> End city (outer islands)</label>
+              <label class="check"><input id="flt-treasure" type="checkbox" /> Buried treasure within 12 chunks</label>
+              <label class="check"><input id="flt-stronghold" type="checkbox" /> Close first stronghold</label>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <label class="field">Slime radius (chunks)<input id="slime-radius" type="number" value="6" min="1" max="16" /></label>
+              <label class="field">Min slime chunks<input id="slime-min" type="number" value="3" min="1" max="40" /></label>
+              <label class="field">Stronghold max dist<input id="sh-dist" type="number" value="1600" min="400" max="4000" /></label>
+            </div>
+
+            <h3>Presets</h3>
+            <div class="presets" id="presets"></div>
+
+            <h3>Scan</h3>
+            <div class="row">
+              <label class="field grow">Start seed<input id="start-seed" class="mono" type="text" value="0" /></label>
+              <label class="field">Max results<input id="max-results" type="number" value="12" min="1" max="100" /></label>
+              <label class="field">Max checked<input id="max-checked" type="number" value="1500000" min="1000" step="100000" /></label>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="btn" id="search-btn">Find seeds</button>
+              <button class="btn secondary" id="stop-btn" disabled>Stop</button>
+            </div>
+            <div class="progress" style="margin-top:12px"><i id="bar"></i></div>
+            <p class="note" id="search-status">Ready.</p>
+            <div id="results"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        End pillars use the 1.9+ shuffle
+        <span class="mono">Random(worldSeed).nextLong() &amp; 65535</span>
+        then <span class="mono">Collections.shuffle</span>.
+        Structure positions use Java 1.18+ salts and spacings. Biome viability is not applied.
+      </footer>
+    </div>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

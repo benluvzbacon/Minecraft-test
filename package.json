@@ -1,0 +1,11 @@
+{
+  "name": "minecraft-seed-finder",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Exact Java Edition End-pillar and structure seed finder",
+  "scripts": {
+    "test": "node test/test.js",
+    "start": "python3 -m http.server 8080 --bind 0.0.0.0"
+  }
+}
