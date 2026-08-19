@@ -3,7 +3,7 @@
 A simple Java Edition tool:
 
 1. **Look up a seed** — type a number (or a word) and see the End towers: how tall each one is, and which two crystals have iron cages.
-2. **Find me a seed** — pick what you want (easy dragon, cages far away, a village near spawn…) and copy a seed into Minecraft.
+2. **Find me a seed** — pick what you want (easy dragon, cages far away, a village near spawn…) and copy a seed into Minecraft. Each click finds a **new** batch of worlds. It also guesses the biome you’ll start in.
 
 ## Run it
 

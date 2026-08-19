@@ -84,12 +84,17 @@ function countSlimeNearOrigin(seed, radiusChunks, minCount) {
 }
 
 function randU32() {
+  let n = 0n;
   if (typeof crypto !== "undefined" && crypto.getRandomValues) {
     const a = new Uint32Array(1);
     crypto.getRandomValues(a);
-    return BigInt(a[0]);
+    n = BigInt(a[0]);
+  } else {
+    n = BigInt(Math.floor(Math.random() * 0x100000000));
   }
-  return BigInt(Math.floor(Math.random() * 0x100000000));
+  n ^= BigInt(Date.now() & 0xffffffff);
+  if (typeof performance !== "undefined") n ^= BigInt(Math.floor(performance.now() * 1000) & 0xffffffff);
+  return n & 0xffffffffn;
 }
 
 function randU16() {

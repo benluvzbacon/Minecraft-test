@@ -5,13 +5,12 @@ import {
   inspectSeed,
   pillarsFromPillarSeed,
 } from "./worldgen.js";
-import { PRESETS, collectMatchingPillarSeeds } from "./finder.js";
+import { PRESETS, collectMatchingPillarSeeds, searchSeeds, evaluateWorld } from "./finder.js";
 
 const $ = (id) => document.getElementById(id);
 
-let worker = null;
 let searching = false;
-const seenSeeds = new Set();
+const seenSeeds = new Set(JSON.parse(sessionStorage.getItem("seenSeeds") || "[]"));
 
 function svgEl(name, attrs) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", name);
@@ -275,8 +274,9 @@ function updateMatchCount() {
     el.innerHTML = `<span class="err">Minecraft can’t build that End.</span> Only two cages exist, and they always sit on the 79 and 82 towers. Each height is used once.`;
     return;
   }
-  el.textContent = `That End setup works. Here’s one example below.`;
-  drawPillars($("finder-svg"), pillarsFromPillarSeed(matches[0]));
+  el.textContent = `That End setup works. Preview below — found seeds will be different worlds with this layout.`;
+  const pick = matches[Math.floor(Math.random() * matches.length)];
+  drawPillars($("finder-svg"), pillarsFromPillarSeed(pick));
 }
 
 function showResults(pack) {
@@ -308,65 +308,59 @@ function showResults(pack) {
     .join("");
 }
 
-function ensureWorker() {
-  if (worker) return worker;
-  worker = new Worker("./js/worker.js", { type: "module" });
-  worker.onmessage = (ev) => {
-    const msg = ev.data;
-    if (msg.type === "pillars") {
-      $("search-status").textContent = "Checking worlds that match your End…";
-    }
-    if (msg.type === "progress") {
-      const max = Number($("max-checked").value) || 1_500_000;
-      const pct = Math.min(100, (msg.checked / max) * 100);
-      $("bar").style.width = pct + "%";
-      $("search-status").textContent = `Still looking… found ${msg.found} so far`;
-    }
-    if (msg.type === "done") {
-      searching = false;
-      $("search-btn").disabled = false;
-      $("stop-btn").disabled = true;
-      $("bar").style.width = "100%";
-      $("search-status").textContent = msg.result.results.length
-        ? `Found ${msg.result.results.length}. Copy one into Minecraft.`
-        : "Finished this search.";
-      showResults(msg.result);
-    }
-  };
-  worker.onerror = (err) => {
-    searching = false;
-    $("search-btn").disabled = false;
-    $("search-status").innerHTML = `<span class="err">${err.message}</span>`;
-  };
-  return worker;
+function rememberSeeds(list) {
+  for (const seed of list) seenSeeds.add(String(seed));
+  const keep = [...seenSeeds].slice(-300);
+  seenSeeds.clear();
+  keep.forEach((s) => seenSeeds.add(s));
+  try {
+    sessionStorage.setItem("seenSeeds", JSON.stringify(keep));
+  } catch {
+    /* ignore quota */
+  }
 }
 
 function startSearch() {
+  if (searching) return;
   const filters = readFilters();
-  const maxResults = Number($("max-results").value) || 12;
-  const maxChecked = Number($("max-checked").value) || 1_500_000;
-  const startSeed = parseSeed($("start-seed").value || "0");
-  $("results").innerHTML = "";
-  $("bar").style.width = "8%";
-  $("search-status").textContent = "Looking for worlds…";
+  const maxResults = Math.max(1, Math.min(40, Number($("max-results").value) || 8));
+  const typed = String($("start-seed")?.value || "").trim();
+  $("results").innerHTML = "<p class='note'>Looking for new worlds…</p>";
+  $("bar").style.width = "20%";
+  $("search-status").textContent = "Looking for new worlds…";
   searching = true;
   $("search-btn").disabled = true;
-  $("stop-btn").disabled = false;
-  ensureWorker().postMessage({
-    type: "search",
-    payload: {
-      filters,
-      maxResults,
-      maxChecked,
-      startSeed: startSeed.toString(),
-      randomize: true,
-      exclude: [...seenSeeds],
-    },
-  });
-}
 
-function stopSearch() {
-  if (worker) worker.postMessage({ type: "stop" });
+  window.setTimeout(() => {
+    try {
+      const pack = searchSeeds(filters, {
+        maxResults,
+        maxChecked: 250000,
+        randomize: true,
+        exclude: seenSeeds,
+        startSeed: typed ? parseSeed(typed) : undefined,
+      });
+      if (typed) {
+        const yours = evaluateWorld(parseSeed(typed), filters);
+        if (yours && !pack.results.some((r) => r.seed === yours.seed)) {
+          pack.results.unshift(yours);
+        }
+      }
+      rememberSeeds(pack.results.map((r) => r.seed));
+      $("bar").style.width = "100%";
+      $("search-btn").disabled = false;
+      $("search-btn").textContent = "Find different seeds";
+      searching = false;
+      $("search-status").textContent = pack.results.length
+        ? `Here are ${pack.results.length} new seeds. Click again for another batch.`
+        : "Nothing this time. Change a height or uncheck something and try again.";
+      showResults(pack);
+    } catch (err) {
+      searching = false;
+      $("search-btn").disabled = false;
+      $("search-status").innerHTML = `<span class="err">${err.message || err}</span>`;
+    }
+  }, 40);
 }
 
 function switchTab(name) {
@@ -400,7 +394,7 @@ function init() {
     b.addEventListener("click", () => switchTab(b.dataset.tab));
   });
   $("search-btn").addEventListener("click", startSearch);
-  $("stop-btn").addEventListener("click", stopSearch);
+  $("stop-btn").addEventListener("click", startSearch);
   $("slot-editor").addEventListener("change", updateMatchCount);
   document.querySelectorAll("#find-toggles input").forEach((el) => el.addEventListener("change", updateMatchCount));
 
@@ -419,7 +413,10 @@ function init() {
     }
   });
 
-  $("seed-input").value = "12345";
+  const fresh =
+    (BigInt(Math.floor(Math.random() * 0xffffffff)) << 32n) ^
+    BigInt(Math.floor(Math.random() * 0xffffffff));
+  $("seed-input").value = formatSeed(fresh);
   inspectFromInput();
   updateMatchCount();
 }
