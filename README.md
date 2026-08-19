@@ -246,6 +246,7 @@ API (when `server.py` is running):
 - `POST /api/biomes/search` — find seeds with biomes at points
 - `POST /api/villages` — confirmed village near a seed
 - `POST /api/villages/filter` — keep seeds that have a real village
+- `POST /api/villages/cluster` — find seeds with 2–4 villages packed together
 
 ---
 

@@ -239,6 +239,20 @@ tr.caged td { color: var(--gold); }
 }
 .check input { accent-color: var(--purple-2); }
 
+.cluster-box {
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  background: #10081c;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.cluster-box input[type="range"] {
+  width: 100%;
+  accent-color: #c084fc;
+  margin-top: 8px;
+}
+.cluster-box b { color: var(--gold); font-weight: 650; }
+
 .progress {
   height: 8px; background: #0c0714; border-radius: 99px; overflow: hidden; border: 1px solid var(--line);
 }

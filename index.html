@@ -135,7 +135,7 @@
             </label>
             <div class="filters-extra">
               <label class="check"><input id="flt-slime" type="checkbox" /> Slime chunks near spawn</label>
-              <label class="check"><input data-struct="village" data-radius="450" type="checkbox" /> A village (biome-checked)</label>
+              <label class="check"><input data-struct="village" data-radius="450" type="checkbox" id="flt-village" /> A village (biome-checked)</label>
               <label class="check"><input data-struct="ruined_portal" data-radius="240" type="checkbox" /> A ruined portal</label>
               <label class="check"><input data-struct="outpost" data-radius="400" type="checkbox" /> A pillager outpost</label>
               <label class="check"><input data-struct="swamp_hut" data-radius="500" type="checkbox" /> A witch hut</label>
@@ -147,6 +147,14 @@
               <label class="check"><input data-struct="end_city" data-radius="1600" type="checkbox" /> An End city</label>
               <label class="check"><input id="flt-treasure" type="checkbox" /> Buried treasure</label>
               <label class="check"><input id="flt-stronghold" type="checkbox" /> A closer stronghold</label>
+            </div>
+
+            <div class="cluster-box" id="village-cluster-box">
+              <label class="field">
+                <span>How many villages bunched together: <b id="cluster-label">1 — just one nearby</b></span>
+                <input id="village-cluster" type="range" min="1" max="4" step="1" value="1" />
+              </label>
+              <p class="note" id="cluster-hint">1 is a normal nearby village. 2 is a pair. 3–4 is rare (double/triple/quad village).</p>
             </div>
 
             <input id="slime-radius" type="hidden" value="6" />
@@ -207,6 +215,6 @@
         End towers are exact. Biome search is real Java 1.21 via cubiomes. Paste the seed on the create-world screen.
       </footer>
     </div>
-    <script type="module" src="./js/app.js?v=8"></script>
+    <script type="module" src="./js/app.js?v=10"></script>
   </body>
 </html>

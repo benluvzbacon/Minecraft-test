@@ -154,6 +154,25 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as exc:
                 return self._json(500, {"error": str(exc)})
 
+        if path == "/api/villages/cluster":
+            count = int(body.get("count") or 4)
+            how_many = int(body.get("howMany") or 2)
+            max_dist = int(body.get("maxDist") or 380)
+            maxn = int(body.get("max") or 12000)
+            mc = str(body.get("mc") or "1.21")
+            args = [TOOL, "cluster", str(count), str(maxn), str(how_many), str(max_dist), mc]
+            try:
+                out = subprocess.check_output(args, cwd=ROOT, timeout=120, stderr=subprocess.STDOUT)
+                return self._json(200, json.loads(out.decode()))
+            except subprocess.CalledProcessError as exc:
+                text = exc.output.decode(errors="replace")
+                try:
+                    return self._json(200, json.loads(text))
+                except Exception:
+                    return self._json(500, {"error": text or str(exc)})
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
         if path == "/api/villages/filter":
             seeds = [str(s) for s in (body.get("seeds") or [])][:80]
             radius = int(body.get("radius") or 500)

@@ -347,6 +347,66 @@ function rememberSeeds(list) {
   }
 }
 
+const CLUSTER_WORDS = {
+  1: "1 — just one nearby",
+  2: "2 — a pair close together",
+  3: "3 — a rare triple",
+  4: "4 — a very rare quad",
+};
+
+function clusterCount() {
+  const n = Number($("village-cluster")?.value || 1);
+  return Math.max(1, Math.min(4, n));
+}
+
+function clusterMaxDist(n) {
+  if (n >= 4) return 600;
+  if (n >= 3) return 470;
+  return 360;
+}
+
+function clusterMaxChecks(n) {
+  if (n >= 4) return 35000;
+  if (n >= 3) return 16000;
+  return 8000;
+}
+
+function updateClusterLabel() {
+  const n = clusterCount();
+  if ($("cluster-label")) $("cluster-label").textContent = CLUSTER_WORDS[n] || String(n);
+  if ($("cluster-hint")) {
+    $("cluster-hint").textContent =
+      n === 1
+        ? "1 is a normal nearby village. Slide up for rare clumps."
+        : n === 2
+          ? "Two confirmed villages within about 360 blocks of each other."
+          : n === 3
+            ? "Three villages packed together. This can take a little longer."
+            : "Four villages in one clump — uncommon. Search may take up to a minute.";
+  }
+  if (n >= 2) {
+    const box = document.querySelector("[data-struct='village']");
+    if (box) box.checked = true;
+  }
+}
+
+async function searchVillageCluster(howMany, count) {
+  const res = await fetch("/api/villages/cluster", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      count,
+      howMany,
+      maxDist: clusterMaxDist(howMany),
+      max: clusterMaxChecks(howMany),
+      mc: "1.21",
+    }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
 async function confirmVillages(seeds, radius) {
   const res = await fetch("/api/villages/filter", {
     method: "POST",
@@ -568,6 +628,8 @@ function init() {
   document.querySelectorAll(".tabs button").forEach((b) => {
     b.addEventListener("click", () => switchTab(b.dataset.tab));
   });
+  $("village-cluster")?.addEventListener("input", updateClusterLabel);
+  updateClusterLabel();
   $("search-btn")?.addEventListener("click", startSearch);
   $("stop-btn")?.addEventListener("click", startSearch);
   $("slot-editor")?.addEventListener("change", updateMatchCount);
