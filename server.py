@@ -137,6 +137,42 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as exc:
                 return self._json(500, {"error": str(exc)})
 
+        if path == "/api/villages":
+            seed = str(body.get("seed", "0"))
+            radius = int(body.get("radius") or 500)
+            mc = str(body.get("mc") or "1.21")
+            try:
+                out = subprocess.check_output(
+                    [TOOL, "villages", seed, str(radius), mc],
+                    cwd=ROOT,
+                    timeout=30,
+                    stderr=subprocess.STDOUT,
+                )
+                return self._json(200, json.loads(out.decode()))
+            except subprocess.CalledProcessError as exc:
+                return self._json(500, {"error": exc.output.decode(errors="replace")})
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
+        if path == "/api/villages/filter":
+            seeds = [str(s) for s in (body.get("seeds") or [])][:80]
+            radius = int(body.get("radius") or 500)
+            mc = str(body.get("mc") or "1.21")
+            if not seeds:
+                return self._json(200, {"hits": [], "found": 0})
+            args = [TOOL, "filter_village", str(radius), mc] + seeds
+            try:
+                out = subprocess.check_output(args, cwd=ROOT, timeout=90, stderr=subprocess.STDOUT)
+                return self._json(200, json.loads(out.decode()))
+            except subprocess.CalledProcessError as exc:
+                text = exc.output.decode(errors="replace")
+                try:
+                    return self._json(200, json.loads(text))
+                except Exception:
+                    return self._json(500, {"error": text or str(exc)})
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
         self._json(404, {"error": "not found"})
 
 

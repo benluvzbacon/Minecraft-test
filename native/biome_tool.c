@@ -1,5 +1,6 @@
 #include "generator.h"
 #include "biomes.h"
+#include "finders.h"
 #include "util.h"
 
 #include <inttypes.h>
@@ -28,11 +29,103 @@ static int biome_id_from_name(int mc, const char *name) {
     return none;
 }
 
+static int village_ok_biome(int id) {
+    switch (id) {
+    case plains:
+    case sunflower_plains:
+    case meadow:
+    case desert:
+    case savanna:
+    case savanna_plateau:
+    case taiga:
+    case snowy_taiga:
+    case snowy_plains:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static int find_village(uint64_t seed, int radius, int mc, Pos *out, int *biome_out) {
+    Generator g;
+    setupGenerator(&g, mc, 0);
+    applySeed(&g, DIM_OVERWORLD, seed);
+    int spacing = 34;
+    int extra = (radius / 16) / spacing + 3;
+    Pos best;
+    int best_biome = none;
+    int best_d = 0;
+    int found = 0;
+    for (int rx = -extra; rx <= extra; rx++) {
+        for (int rz = -extra; rz <= extra; rz++) {
+            Pos p;
+            if (!getStructurePos(Village, mc, seed, rx, rz, &p)) continue;
+            long long dx = p.x, dz = p.z;
+            long long d2 = dx * dx + dz * dz;
+            if (d2 > (long long)radius * radius) continue;
+            if (!isViableStructurePos(Village, &g, p.x, p.z, 0)) continue;
+            int biome = getBiomeAt(&g, 1, p.x + 8, 256, p.z + 8);
+            if (biome == lush_caves || biome == dripstone_caves || biome == deep_dark)
+                biome = getBiomeAt(&g, 4, (p.x + 8) >> 2, 4, (p.z + 8) >> 2);
+            if (!village_ok_biome(biome)) continue;
+            if (!found || d2 < best_d) {
+                found = 1;
+                best = p;
+                best_biome = biome;
+                best_d = (int)d2;
+            }
+        }
+    }
+    if (!found) return 0;
+    if (out) *out = best;
+    if (biome_out) *biome_out = best_biome;
+    return 1;
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "usage: biome_tool at <seed> <x> <z> [mc]\n");
-        fprintf(stderr, "       biome_tool search <count> <max> [mc] <x> <z> <biome> ...\n");
+        fprintf(stderr, "usage: biome_tool at|search|villages|filter_village ...\n");
         return 2;
+    }
+
+    if (strcmp(argv[1], "villages") == 0 && argc >= 4) {
+        uint64_t seed = parse_seed(argv[2]);
+        int radius = atoi(argv[3]);
+        int mc = parse_mc(argc >= 5 ? argv[4] : "1.21");
+        if (radius < 64) radius = 64;
+        if (radius > 2000) radius = 2000;
+        Pos p;
+        int biome = none;
+        int ok = find_village(seed, radius, mc, &p, &biome);
+        const char *name = biome2str(mc, biome);
+        printf("{\"seed\":\"%" PRId64 "\",\"villages\":", (int64_t)seed);
+        if (ok)
+            printf("[{\"x\":%d,\"z\":%d,\"biome\":\"%s\"}]", p.x, p.z, name ? name : "unknown");
+        else
+            printf("[]");
+        printf("}\n");
+        return 0;
+    }
+
+    if (strcmp(argv[1], "filter_village") == 0 && argc >= 4) {
+        int radius = atoi(argv[2]);
+        int mc = parse_mc(argv[3]);
+        if (radius < 64) radius = 64;
+        printf("{\"hits\":[");
+        int found = 0;
+        for (int i = 4; i < argc; i++) {
+            uint64_t seed = parse_seed(argv[i]);
+            Pos p;
+            int biome = none;
+            if (!find_village(seed, radius, mc, &p, &biome)) continue;
+            const char *name = biome2str(mc, biome);
+            if (found) printf(",");
+            printf("{\"seed\":\"%" PRId64 "\",\"x\":%d,\"z\":%d,\"biome\":\"%s\"}",
+                   (int64_t)seed, p.x, p.z, name ? name : "unknown");
+            found++;
+        }
+        printf("],\"found\":%d}\n", found);
+        return found ? 0 : 1;
     }
 
     if (strcmp(argv[1], "at") == 0 && argc >= 5) {

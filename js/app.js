@@ -150,6 +150,30 @@ function inspectFromInput() {
   const radius = Number($("inspect-radius").value) || 800;
   const data = inspectSeed(seed, { radius, slimeChunks: 8 });
   renderInspect(data);
+  fetch("/api/villages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ seed: data.seed, radius: 600, mc: "1.21" }),
+  })
+    .then((r) => r.json())
+    .then((v) => {
+      const list = v.villages || [];
+      const box = $("struct-results");
+      if (!box) return;
+      const extra = list.length
+        ? `<li><span class="struct-k">🏠 Village (confirmed)</span><div class="mono">${list
+            .map((h) => `${h.x}, ${h.z} ${h.biome || ""}`)
+            .join(" · ")}</div></li>`
+        : `<li><span class="struct-k">🏠 Village (confirmed)</span><div>none within 600 blocks</div></li>`;
+      const ul = box.querySelector("ul");
+      if (ul) {
+        [...ul.querySelectorAll("li")].forEach((li) => {
+          if (li.textContent.includes("Village")) li.remove();
+        });
+        ul.insertAdjacentHTML("afterbegin", extra);
+      }
+    })
+    .catch(() => {});
 }
 
 function buildSlotEditor() {
@@ -323,22 +347,41 @@ function rememberSeeds(list) {
   }
 }
 
+async function confirmVillages(seeds, radius) {
+  const res = await fetch("/api/villages/filter", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ seeds, radius, mc: "1.21" }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  const map = new Map();
+  for (const h of data.hits || []) map.set(String(h.seed), h);
+  return map;
+}
+
 function startSearch() {
   searching = false;
   const filters = readFilters();
+  const wantVillage = (filters.structures || []).some((s) => s.id === "village");
+  const villageRadius = (filters.structures || []).find((s) => s.id === "village")?.radius || 450;
   const maxResults = Math.max(1, Math.min(40, Number($("max-results")?.value) || 8));
   const typed = String($("start-seed")?.value || "").trim();
   if ($("results")) $("results").innerHTML = "<p class='note'>Looking for new worlds…</p>";
   if ($("bar")) $("bar").style.width = "20%";
-  if ($("search-status")) $("search-status").textContent = "Looking for new worlds…";
+  if ($("search-status")) {
+    $("search-status").textContent = wantVillage
+      ? "Finding village attempts, then checking real biomes…"
+      : "Looking for new worlds…";
+  }
   if ($("search-btn")) $("search-btn").disabled = true;
   searching = true;
 
-  window.setTimeout(() => {
+  window.setTimeout(async () => {
     try {
       const pack = searchSeeds(filters, {
-        maxResults,
-        maxChecked: 80000,
+        maxResults: wantVillage ? Math.max(maxResults * 6, 24) : maxResults,
+        maxChecked: 120000,
         randomize: true,
         exclude: seenSeeds,
         startSeed: typed ? parseSeed(typed) : undefined,
@@ -349,6 +392,22 @@ function startSearch() {
           pack.results.unshift(yours);
         }
       }
+      if (wantVillage && pack.results.length) {
+        if ($("search-status")) $("search-status").textContent = "Confirming villages with cubiomes…";
+        const ok = await confirmVillages(
+          pack.results.map((r) => r.seed),
+          villageRadius
+        );
+        pack.results = pack.results.filter((r) => ok.has(r.seed)).map((r) => {
+          const v = ok.get(r.seed);
+          const line = `Village at ${v.x}, ${v.z} (${(v.biome || "").replaceAll("_", " ")})`;
+          return {
+            ...r,
+            reasons: [line, ...(r.reasons || []).filter((x) => !String(x).startsWith("Village around"))],
+          };
+        });
+        pack.results = pack.results.slice(0, maxResults);
+      }
       rememberSeeds(pack.results.map((r) => r.seed));
       if ($("bar")) $("bar").style.width = "100%";
       if ($("search-btn")) {
@@ -358,8 +417,10 @@ function startSearch() {
       searching = false;
       if ($("search-status")) {
         $("search-status").textContent = pack.results.length
-          ? `Here are ${pack.results.length} new seeds. Click again for another batch.`
-          : "Nothing this time. Change a height or uncheck something and try again.";
+          ? wantVillage
+            ? `Here are ${pack.results.length} seeds with a biome-checked village.`
+            : `Here are ${pack.results.length} new seeds. Click again for another batch.`
+          : "Nothing this time. Uncheck something or try again.";
       }
       showResults(pack);
     } catch (err) {

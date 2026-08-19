@@ -359,7 +359,7 @@ export const PRESETS = {
     blurb: "A village and slime chunks near spawn, plus an easy first End tower.",
     pillars: { cageOff: [0] },
     slime: { radius: 6, min: 4 },
-    structures: [{ id: "village", radius: 250 }],
+    structures: [{ id: "village", radius: 450 }],
   },
   nether_spawn: {
     name: "Good Nether start",
