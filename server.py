@@ -154,6 +154,68 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as exc:
                 return self._json(500, {"error": str(exc)})
 
+        if path == "/api/spawn":
+            seed = str(body.get("seed", "0"))
+            mc = str(body.get("mc") or "1.21")
+            try:
+                out = subprocess.check_output(
+                    [TOOL, "spawn", seed, mc], cwd=ROOT, timeout=40, stderr=subprocess.STDOUT
+                )
+                return self._json(200, json.loads(out.decode()))
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
+        if path == "/api/around":
+            seed = str(body.get("seed", "0"))
+            radius = int(body.get("radius") or 800)
+            mc = str(body.get("mc") or "1.21")
+            try:
+                out = subprocess.check_output(
+                    [TOOL, "around", seed, str(radius), mc], cwd=ROOT, timeout=40, stderr=subprocess.STDOUT
+                )
+                return self._json(200, json.loads(out.decode()))
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
+        if path == "/api/structures/filter":
+            st = str(body.get("type") or "outpost")
+            radius = int(body.get("radius") or 500)
+            mc = str(body.get("mc") or "1.21")
+            seeds = [str(s) for s in (body.get("seeds") or [])][:80]
+            if not seeds:
+                return self._json(200, {"hits": [], "found": 0})
+            args = [TOOL, "filter_struct", st, str(radius), mc] + seeds
+            try:
+                out = subprocess.check_output(args, cwd=ROOT, timeout=90, stderr=subprocess.STDOUT)
+                return self._json(200, json.loads(out.decode()))
+            except subprocess.CalledProcessError as exc:
+                text = exc.output.decode(errors="replace")
+                try:
+                    return self._json(200, json.loads(text))
+                except Exception:
+                    return self._json(500, {"error": text or str(exc)})
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
+        if path == "/api/structures/search":
+            st = str(body.get("type") or "outpost")
+            count = int(body.get("count") or 5)
+            radius = int(body.get("radius") or 500)
+            maxn = int(body.get("max") or 12000)
+            mc = str(body.get("mc") or "1.21")
+            args = [TOOL, "find_struct", st, str(count), str(maxn), str(radius), mc]
+            try:
+                out = subprocess.check_output(args, cwd=ROOT, timeout=120, stderr=subprocess.STDOUT)
+                return self._json(200, json.loads(out.decode()))
+            except subprocess.CalledProcessError as exc:
+                text = exc.output.decode(errors="replace")
+                try:
+                    return self._json(200, json.loads(text))
+                except Exception:
+                    return self._json(500, {"error": text or str(exc)})
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
         if path == "/api/villages/cluster":
             count = int(body.get("count") or 4)
             how_many = int(body.get("howMany") or 2)

@@ -150,28 +150,54 @@ function inspectFromInput() {
   const radius = Number($("inspect-radius").value) || 800;
   const data = inspectSeed(seed, { radius, slimeChunks: 8 });
   renderInspect(data);
-  fetch("/api/villages", {
+  fetch("/api/spawn", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ seed: data.seed, radius: 600, mc: "1.21" }),
+    body: JSON.stringify({ seed: data.seed, mc: "1.21" }),
+  })
+    .then((r) => r.json())
+    .then((s) => {
+      if (s.error || !s.biome) return;
+      if ($("meta-spawn")) $("meta-spawn").textContent = s.biome.replaceAll("_", " ");
+      if ($("cage-summary")) {
+        $("cage-summary").insertAdjacentHTML(
+          "beforeend",
+          ` <span class="note">Spawn ${s.x}, ${s.z} · <button class="copy" data-copy="${s.tp}">Copy /tp spawn</button></span>`
+        );
+      }
+    })
+    .catch(() => {});
+  fetch("/api/around", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ seed: data.seed, radius: 900, mc: "1.21" }),
   })
     .then((r) => r.json())
     .then((v) => {
-      const list = v.villages || [];
       const box = $("struct-results");
-      if (!box) return;
-      const extra = list.length
-        ? `<li><span class="struct-k">🏠 Village (confirmed)</span><div class="mono">${list
-            .map((h) => `${h.x}, ${h.z} ${h.biome || ""}`)
-            .join(" · ")}</div></li>`
-        : `<li><span class="struct-k">🏠 Village (confirmed)</span><div>none within 600 blocks</div></li>`;
-      const ul = box.querySelector("ul");
-      if (ul) {
-        [...ul.querySelectorAll("li")].forEach((li) => {
-          if (li.textContent.includes("Village")) li.remove();
-        });
-        ul.insertAdjacentHTML("afterbegin", extra);
-      }
+      if (!box || v.error) return;
+      const structs = v.structures || {};
+      const labels = {
+        village: "🏠 Village",
+        outpost: "🚩 Pillager outpost",
+        swamp_hut: "🧙 Witch hut",
+        desert_pyramid: "🏜️ Desert pyramid",
+        igloo: "🧊 Igloo",
+        ruined_portal: "🟣 Ruined portal",
+        ancient_city: "👁️ Ancient city",
+        trail_ruins: "🧱 Trail ruins",
+        trial_chambers: "⚔️ Trial chambers",
+        fortress: "🔥 Nether fortress",
+        bastion: "🐷 Bastion",
+        shipwreck: "⛵ Shipwreck",
+        ocean_ruin: "🏛️ Ocean ruin",
+      };
+      const items = Object.entries(structs).map(([k, h]) => {
+        const lab = labels[k] || k;
+        return `<li><span class="struct-k">${lab}</span><div class="mono">${h.x}, ${h.y}, ${h.z}${h.biome ? " · " + h.biome : ""}</div>
+          <button class="copy" data-copy="${h.tp}">Copy /tp</button></li>`;
+      });
+      box.innerHTML = `<p class="note">Confirmed spots — paste the command in chat (cheats on).</p><ul>${items.join("") || "<li>None confirmed in range.</li>"}</ul>`;
     })
     .catch(() => {});
 }
@@ -420,54 +446,132 @@ async function confirmVillages(seeds, radius) {
   return map;
 }
 
+const CUBI_STRUCT = {
+  village: { type: "village", radius: 520, label: "Village" },
+  outpost: { type: "outpost", radius: 560, label: "Outpost" },
+  swamp_hut: { type: "swamp_hut", radius: 700, label: "Witch hut" },
+  ruined_portal: { type: "ruined_portal", radius: 320, label: "Portal" },
+  ancient_city: { type: "ancient_city", radius: 560, label: "Ancient city" },
+  trial_chambers: { type: "trial_chambers", radius: 500, label: "Trial chambers" },
+  fortress: { type: "fortress", radius: 320, label: "Fortress" },
+  bastion: { type: "bastion", radius: 340, label: "Bastion" },
+  monument: { type: "monument", radius: 800, label: "Monument" },
+  end_city: { type: "end_city", radius: 1800, label: "End city" },
+};
+
+async function filterStruct(type, seeds, radius) {
+  const res = await fetch("/api/structures/filter", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, seeds, radius, mc: "1.21" }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  const map = new Map();
+  for (const h of data.hits || []) map.set(String(h.seed), h);
+  return map;
+}
+
+async function searchStruct(type, count, radius) {
+  const res = await fetch("/api/structures/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, count, radius, max: 18000, mc: "1.21" }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.hits || [];
+}
+
 function startSearch() {
   searching = false;
   const filters = readFilters();
-  const wantVillage = (filters.structures || []).some((s) => s.id === "village");
-  const villageRadius = (filters.structures || []).find((s) => s.id === "village")?.radius || 450;
-  const maxResults = Math.max(1, Math.min(40, Number($("max-results")?.value) || 8));
+  const clump = clusterCount();
+  const cubi = (filters.structures || []).map((s) => CUBI_STRUCT[s.id]).filter(Boolean);
+  const maxResults = Math.max(1, Math.min(20, Number($("max-results")?.value) || 6));
   const typed = String($("start-seed")?.value || "").trim();
   if ($("results")) $("results").innerHTML = "<p class='note'>Looking for new worlds…</p>";
   if ($("bar")) $("bar").style.width = "20%";
   if ($("search-status")) {
-    $("search-status").textContent = wantVillage
-      ? "Finding village attempts, then checking real biomes…"
-      : "Looking for new worlds…";
+    $("search-status").textContent =
+      clump >= 2
+        ? `Hunting ${clump} villages packed together…`
+        : cubi.length
+          ? "Checking real structure locations (cubiomes)…"
+          : "Looking for new worlds…";
   }
   if ($("search-btn")) $("search-btn").disabled = true;
   searching = true;
 
   window.setTimeout(async () => {
     try {
-      const pack = searchSeeds(filters, {
-        maxResults: wantVillage ? Math.max(maxResults * 6, 24) : maxResults,
-        maxChecked: 120000,
-        randomize: true,
-        exclude: seenSeeds,
-        startSeed: typed ? parseSeed(typed) : undefined,
-      });
-      if (typed) {
-        const yours = evaluateWorld(parseSeed(typed), filters);
-        if (yours && !pack.results.some((r) => r.seed === yours.seed)) {
-          pack.results.unshift(yours);
-        }
-      }
-      if (wantVillage && pack.results.length) {
-        if ($("search-status")) $("search-status").textContent = "Confirming villages with cubiomes…";
-        const ok = await confirmVillages(
-          pack.results.map((r) => r.seed),
-          villageRadius
-        );
-        pack.results = pack.results.filter((r) => ok.has(r.seed)).map((r) => {
-          const v = ok.get(r.seed);
-          const line = `Village at ${v.x}, ${v.z} (${(v.biome || "").replaceAll("_", " ")})`;
-          return {
-            ...r,
-            reasons: [line, ...(r.reasons || []).filter((x) => !String(x).startsWith("Village around"))],
+      let pack = { results: [] };
+
+      if (clump >= 2) {
+        const data = await searchVillageCluster(clump, maxResults);
+        for (const h of data.hits || []) {
+          const ev = evaluateWorld(parseSeed(h.seed), { pillars: filters.pillars, slime: filters.slime }) || {
+            seed: String(h.seed),
+            cages: [],
+            reasons: [],
           };
+          const pts = (h.villages || []).map((v) => `${v.x}, ${v.z}`);
+          ev.reasons = [`${clump} villages: ${pts.join(" · ")}`, ...(ev.reasons || [])];
+          ev.tps = (h.villages || []).map((v, i) => ({
+            label: `village ${i + 1}`,
+            cmd: v.tp || `/tp @s ${v.x} 80 ${v.z}`,
+          }));
+          pack.results.push(ev);
+        }
+      } else if (cubi.length && !filters.pillars) {
+        const first = cubi[0];
+        const hits = await searchStruct(first.type, maxResults, first.radius);
+        pack.results = hits.map((h) => ({
+          seed: String(h.seed),
+          cages: [],
+          reasons: [`${first.label} at ${h.x}, ${h.y}, ${h.z} — ${h.tp}`],
+          tps: [{ label: first.label, cmd: h.tp }],
+        }));
+        for (const extra of cubi.slice(1)) {
+          const ok = await filterStruct(extra.type, pack.results.map((r) => r.seed), extra.radius);
+          pack.results = pack.results.filter((r) => ok.has(r.seed)).map((r) => {
+            const h = ok.get(r.seed);
+            r.reasons.push(`${extra.label} at ${h.x}, ${h.y}, ${h.z}`);
+            r.tps.push({ label: extra.label, cmd: h.tp });
+            return r;
+          });
+        }
+      } else {
+        const jsFilters = { ...filters };
+        if (cubi.length) jsFilters.structures = filters.structures;
+        pack = searchSeeds(jsFilters, {
+          maxResults: cubi.length ? Math.max(maxResults * 8, 32) : maxResults,
+          maxChecked: 120000,
+          randomize: true,
+          exclude: seenSeeds,
+          startSeed: typed ? parseSeed(typed) : undefined,
         });
+        if (typed) {
+          const yours = evaluateWorld(parseSeed(typed), jsFilters);
+          if (yours && !pack.results.some((r) => r.seed === yours.seed)) pack.results.unshift(yours);
+        }
+        for (const spec of cubi) {
+          if ($("search-status")) $("search-status").textContent = `Confirming ${spec.label}…`;
+          const ok = await filterStruct(spec.type, pack.results.map((r) => r.seed), spec.radius);
+          pack.results = pack.results.filter((r) => ok.has(r.seed)).map((r) => {
+            const h = ok.get(r.seed);
+            r.tps = r.tps || [];
+            r.tps.push({ label: spec.label, cmd: h.tp });
+            r.reasons = [
+              `${spec.label} at ${h.x}, ${h.y}, ${h.z}`,
+              ...(r.reasons || []).filter((x) => !String(x).toLowerCase().includes(spec.label.toLowerCase())),
+            ];
+            return r;
+          });
+        }
         pack.results = pack.results.slice(0, maxResults);
       }
+
       rememberSeeds(pack.results.map((r) => r.seed));
       if ($("bar")) $("bar").style.width = "100%";
       if ($("search-btn")) {
@@ -477,10 +581,8 @@ function startSearch() {
       searching = false;
       if ($("search-status")) {
         $("search-status").textContent = pack.results.length
-          ? wantVillage
-            ? `Here are ${pack.results.length} seeds with a biome-checked village.`
-            : `Here are ${pack.results.length} new seeds. Click again for another batch.`
-          : "Nothing this time. Uncheck something or try again.";
+          ? `Here are ${pack.results.length} seeds. Use Copy /tp in chat (cheats on).`
+          : "Nothing this pass. Try again or tick fewer extras.";
       }
       showResults(pack);
     } catch (err) {
@@ -649,8 +751,11 @@ function init() {
     if (!(t instanceof HTMLElement)) return;
     if (t.dataset.copy) {
       navigator.clipboard?.writeText(t.dataset.copy);
+      const tp = t.dataset.copy.startsWith("/tp");
       t.textContent = "Copied";
-      setTimeout(() => (t.textContent = "Copy seed"), 900);
+      setTimeout(() => {
+        t.textContent = tp ? "Copy /tp" : "Copy seed";
+      }, 900);
     }
     if (t.dataset.inspect) {
       $("seed-input").value = t.dataset.inspect;

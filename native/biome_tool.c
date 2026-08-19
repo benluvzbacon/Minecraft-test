@@ -132,9 +132,105 @@ static void print_vil_array(Vil *v, int n, int mc) {
     for (int i = 0; i < n; i++) {
         const char *name = biome2str(mc, v[i].biome);
         if (i) printf(",");
-        printf("{\"x\":%d,\"z\":%d,\"biome\":\"%s\"}", v[i].x, v[i].z, name ? name : "unknown");
+        printf("{\"x\":%d,\"y\":80,\"z\":%d,\"biome\":\"%s\",\"tp\":\"/tp @s %d 80 %d\"}",
+               v[i].x, v[i].z, name ? name : "unknown", v[i].x, v[i].z);
     }
     printf("]");
+}
+
+typedef struct {
+    int x, y, z, biome;
+    char tp[64];
+} Hit;
+
+static int stype_from_name(const char *s) {
+    if (!s) return -1;
+    if (!strcmp(s, "village")) return Village;
+    if (!strcmp(s, "outpost")) return Outpost;
+    if (!strcmp(s, "monument")) return Monument;
+    if (!strcmp(s, "mansion")) return Mansion;
+    if (!strcmp(s, "swamp_hut")) return Swamp_Hut;
+    if (!strcmp(s, "desert_pyramid")) return Desert_Pyramid;
+    if (!strcmp(s, "jungle_pyramid") || !strcmp(s, "jungle_temple")) return Jungle_Pyramid;
+    if (!strcmp(s, "igloo")) return Igloo;
+    if (!strcmp(s, "ruined_portal")) return Ruined_Portal;
+    if (!strcmp(s, "ancient_city")) return Ancient_City;
+    if (!strcmp(s, "trail_ruins")) return Trail_Ruins;
+    if (!strcmp(s, "trial_chambers")) return Trial_Chambers;
+    if (!strcmp(s, "fortress")) return Fortress;
+    if (!strcmp(s, "bastion")) return Bastion;
+    if (!strcmp(s, "end_city")) return End_City;
+    if (!strcmp(s, "shipwreck")) return Shipwreck;
+    if (!strcmp(s, "ocean_ruin")) return Ocean_Ruin;
+    return -1;
+}
+
+static int struct_dim(int st) {
+    if (st == Fortress || st == Bastion || st == Ruined_Portal_N) return DIM_NETHER;
+    if (st == End_City) return DIM_END;
+    return DIM_OVERWORLD;
+}
+
+static int struct_y(int st) {
+    if (st == Ancient_City) return -37;
+    if (st == Trial_Chambers) return -20;
+    if (st == Monument) return 48;
+    if (st == Fortress || st == Bastion) return 64;
+    if (st == End_City) return 80;
+    return 80;
+}
+
+static int nearest_struct(uint64_t seed, int st, int radius, int mc, Hit *out) {
+    StructureConfig sc;
+    if (!getStructureConfig(st, mc, &sc)) return 0;
+    int dim = struct_dim(st);
+    Generator *gp = (Generator *)calloc(1, sizeof(Generator));
+    if (!gp) return 0;
+    setupGenerator(gp, mc, 0);
+    applySeed(gp, dim, seed);
+    int spacing = sc.regionSize > 0 ? sc.regionSize : 32;
+    int extra = (radius / 16) / spacing + 3;
+    int found = 0;
+    Pos best;
+    int best_d = 0;
+    for (int rx = -extra; rx <= extra; rx++) {
+        for (int rz = -extra; rz <= extra; rz++) {
+            Pos p;
+            if (!getStructurePos(st, mc, seed, rx, rz, &p)) continue;
+            long long dx = p.x, dz = p.z;
+            long long d2 = dx * dx + dz * dz;
+            if (d2 > (long long)radius * radius) continue;
+            if (st != End_City) {
+                if (!isViableStructurePos(st, gp, p.x, p.z, 0)) continue;
+            }
+            if (!found || d2 < best_d) {
+                found = 1;
+                best = p;
+                best_d = (int)d2;
+            }
+        }
+    }
+    if (!found) {
+        free(gp);
+        return 0;
+    }
+    int y = struct_y(st);
+    int biome = none;
+    if (dim == DIM_OVERWORLD)
+        biome = getBiomeAt(gp, 1, best.x + 8, y > 0 ? y : 80, best.z + 8);
+    out->x = best.x + 8;
+    out->z = best.z + 8;
+    out->y = y;
+    out->biome = biome;
+    snprintf(out->tp, sizeof(out->tp), "/tp @s %d %d %d", out->x, out->y, out->z);
+    free(gp);
+    return 1;
+}
+
+static void print_hit(int64_t seed, Hit *h) {
+    const char *bname = biome2str(MC_1_21, h->biome);
+    printf("{\"seed\":\"%" PRId64 "\",\"x\":%d,\"y\":%d,\"z\":%d,\"biome\":\"%s\",\"tp\":\"%s\"}",
+           seed, h->x, h->y, h->z, bname ? bname : "", h->tp);
 }
 
 int main(int argc, char **argv) {
@@ -288,6 +384,112 @@ int main(int argc, char **argv) {
         }
         printf("],\"checked\":%d,\"found\":%d}\n", checked, found);
         return found ? 0 : 1;
+    }
+
+    if (strcmp(argv[1], "spawn") == 0 && argc >= 3) {
+        uint64_t seed = parse_seed(argv[2]);
+        int mc = parse_mc(argc >= 4 ? argv[3] : "1.21");
+        Generator g;
+        setupGenerator(&g, mc, 0);
+        applySeed(&g, DIM_OVERWORLD, seed);
+        Pos p = getSpawn(&g);
+        int id = none;
+        static const int ys[] = {63, 72, 80, 96, 120, 160, 200, 256};
+        for (int i = 0; i < 8; i++) {
+            id = getBiomeAt(&g, 1, p.x, ys[i], p.z);
+            if (id != none && id != lush_caves && id != dripstone_caves && id != deep_dark)
+                break;
+        }
+        const char *name = biome2str(mc, id);
+        printf("{\"seed\":\"%" PRId64 "\",\"x\":%d,\"y\":80,\"z\":%d,\"biome\":\"%s\",\"tp\":\"/tp @s %d 80 %d\"}\n",
+               (int64_t)seed, p.x, p.z, name ? name : "unknown", p.x, p.z);
+        return 0;
+    }
+
+    if (strcmp(argv[1], "find_struct") == 0 && argc >= 6) {
+        /* find_struct <type> <want> <maxcheck> <radius> [mc] */
+        int st = stype_from_name(argv[2]);
+        if (st < 0) {
+            fprintf(stderr, "unknown structure %s\n", argv[2]);
+            return 2;
+        }
+        int want = atoi(argv[3]);
+        int maxn = atoi(argv[4]);
+        int radius = atoi(argv[5]);
+        int mc = parse_mc(argc >= 7 ? argv[6] : "1.21");
+        if (want < 1) want = 1;
+        if (want > 12) want = 12;
+        if (radius < 80) radius = 80;
+        if (maxn < 200) maxn = 200;
+        if (maxn > 60000) maxn = 60000;
+        uint64_t seed = ((uint64_t)time(NULL) << 20) ^ (uint64_t)clock() ^ 0xC2B2AE3D27D4EB4FULL;
+        int found = 0, checked = 0;
+        printf("{\"hits\":[");
+        for (int n = 0; n < maxn && found < want; n++) {
+            seed = seed * 6364136223846793005ULL + 1;
+            if (((seed >> 48) & 0xffffULL) == 0) seed |= 0x9E37ULL << 48;
+            Hit h;
+            checked++;
+            if (!nearest_struct(seed, st, radius, mc, &h)) continue;
+            if (found) printf(",");
+            print_hit((int64_t)seed, &h);
+            found++;
+        }
+        printf("],\"checked\":%d,\"found\":%d}\n", checked, found);
+        return found ? 0 : 1;
+    }
+
+    if (strcmp(argv[1], "filter_struct") == 0 && argc >= 5) {
+        /* filter_struct <type> <radius> <mc> <seed>... */
+        int st = stype_from_name(argv[2]);
+        if (st < 0) {
+            fprintf(stderr, "unknown structure %s\n", argv[2]);
+            return 2;
+        }
+        int radius = atoi(argv[3]);
+        int mc = parse_mc(argv[4]);
+        if (radius < 80) radius = 80;
+        printf("{\"hits\":[");
+        int found = 0;
+        for (int i = 5; i < argc; i++) {
+            uint64_t seed = parse_seed(argv[i]);
+            Hit h;
+            if (!nearest_struct(seed, st, radius, mc, &h)) continue;
+            if (found) printf(",");
+            print_hit((int64_t)seed, &h);
+            found++;
+        }
+        printf("],\"found\":%d}\n", found);
+        return found ? 0 : 1;
+    }
+
+    if (strcmp(argv[1], "around") == 0 && argc >= 4) {
+        uint64_t seed = parse_seed(argv[2]);
+        int radius = atoi(argv[3]);
+        int mc = parse_mc(argc >= 5 ? argv[4] : "1.21");
+        if (radius < 80) radius = 80;
+        if (radius > 2500) radius = 2500;
+        static const char *names[] = {
+            "village", "outpost", "swamp_hut", "desert_pyramid", "igloo",
+            "ruined_portal", "ancient_city", "trail_ruins", "trial_chambers",
+            "fortress", "bastion", "shipwreck", "ocean_ruin", NULL
+        };
+        printf("{\"seed\":\"%" PRId64 "\",\"structures\":{", (int64_t)seed);
+        int first = 1;
+        for (int i = 0; names[i]; i++) {
+            int st = stype_from_name(names[i]);
+            Hit h;
+            if (!nearest_struct(seed, st, radius, mc, &h)) continue;
+            if (!first) printf(",");
+            first = 0;
+            {
+                const char *bn = biome2str(mc, h.biome);
+                printf("\"%s\":{\"x\":%d,\"y\":%d,\"z\":%d,\"biome\":\"%s\",\"tp\":\"%s\"}",
+                       names[i], h.x, h.y, h.z, bn ? bn : "", h.tp);
+            }
+        }
+        printf("}}\n");
+        return 0;
     }
 
     return 2;
