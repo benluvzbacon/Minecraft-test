@@ -36,16 +36,17 @@
             <button class="btn" id="inspect-btn">Show me</button>
             <button class="btn secondary" id="random-seed">Surprise me</button>
           </div>
-          <p class="note" style="margin-top:10px">
+            <p class="note" style="margin-top:10px">
             Copy the number into Minecraft when you create a world (Java Edition).
+            “You'll probably start in” is a climate guess from the seed, not a guaranteed GPS pin.
           </p>
         </div>
 
         <div class="stats" style="margin:16px 0">
           <div class="stat"><span>This seed</span><b id="meta-seed" class="mono">—</b></div>
+          <div class="stat"><span>You'll probably start in</span><b id="meta-spawn">—</b></div>
           <div class="stat"><span>Caged crystals</span><b id="meta-cages">—</b></div>
           <div class="stat"><span>Stronghold (about)</span><b id="meta-sh" class="mono">—</b></div>
-          <div class="stat"><span>Slime chunks near spawn</span><b id="meta-slime">—</b></div>
         </div>
         <div class="hidden">
           <b id="meta-pillar"></b>
@@ -139,6 +140,7 @@
             <input id="sh-dist" type="hidden" value="1600" />
             <input id="start-seed" type="hidden" value="0" />
             <input id="max-results" type="hidden" value="8" />
+            <span id="meta-slime" class="hidden"></span>
             <input id="max-checked" type="hidden" value="1500000" />
 
             <div class="row" style="margin-top:16px">

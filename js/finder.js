@@ -1,7 +1,7 @@
 import {
   PILLAR_SLOTS,
   pillarsFromPillarSeed,
-  worldSeedFromPillar,
+  fullSeedFromPillar,
   getPillarSeed,
   isSlimeChunk,
   STRUCTURES,
@@ -10,6 +10,7 @@ import {
   isBuriedTreasureChunk,
 } from "./worldgen.js";
 import { asInt64 } from "./java-random.js";
+import { guessSpawnBiome, biomeMatchesFilter } from "./biome.js";
 
 function cageSlots(pillars) {
   return pillars.filter((p) => p.guarded).map((p) => p.slot).sort((a, b) => a - b);
@@ -82,6 +83,19 @@ function countSlimeNearOrigin(seed, radiusChunks, minCount) {
   return n;
 }
 
+function randU32() {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const a = new Uint32Array(1);
+    crypto.getRandomValues(a);
+    return BigInt(a[0]);
+  }
+  return BigInt(Math.floor(Math.random() * 0x100000000));
+}
+
+function randU16() {
+  return randU32() & 0xffffn;
+}
+
 export function evaluateWorld(worldSeed, filters) {
   const seed = asInt64(worldSeed);
   const reasons = [];
@@ -91,6 +105,12 @@ export function evaluateWorld(worldSeed, filters) {
     if (!filters.pillarSeeds.has(ps)) return null;
   } else if (filters.pillars) {
     if (!evaluatePillars(pillarsFromPillarSeed(getPillarSeed(seed)), filters.pillars)) return null;
+  }
+
+  let spawn = null;
+  if (filters.spawnBiome) {
+    spawn = guessSpawnBiome(seed);
+    if (!biomeMatchesFilter(spawn, filters.spawnBiome)) return null;
   }
 
   if (filters.slime) {
@@ -139,6 +159,8 @@ export function evaluateWorld(worldSeed, filters) {
   }
 
   const pillars = pillarsFromPillarSeed(getPillarSeed(seed));
+  if (!spawn) spawn = guessSpawnBiome(seed);
+  reasons.unshift(`${spawn.icon} Likely start: ${spawn.name}`);
   return {
     seed: seed.toString(),
     pillarSeed: getPillarSeed(seed),
@@ -146,19 +168,23 @@ export function evaluateWorld(worldSeed, filters) {
     cages: pillars.filter((p) => p.guarded),
     nearby,
     reasons,
+    spawn,
   };
 }
 
 /**
  * Search world seeds.
- * When pillarSeeds is provided, only seeds that produce those End layouts are visited.
+ * randomize (default true) picks fresh 64-bit worlds each run so results don't repeat.
  */
 export function searchSeeds(filters, opts = {}) {
   const maxResults = opts.maxResults ?? 20;
   const maxChecked = opts.maxChecked ?? 2_000_000;
   const onProgress = opts.onProgress;
   const shouldStop = opts.shouldStop;
+  const randomize = opts.randomize !== false;
+  const exclude = opts.exclude instanceof Set ? opts.exclude : new Set(opts.exclude || []);
   const results = [];
+  const seen = new Set(exclude);
   let checked = 0;
 
   const pillarList = filters.pillarSeeds
@@ -175,49 +201,62 @@ export function searchSeeds(filters, opts = {}) {
     filters.slime ||
     (filters.structures && filters.structures.length) ||
     filters.buriedTreasure ||
-    filters.stronghold
+    filters.stronghold ||
+    filters.spawnBiome
   );
 
+  const take = (seed) => {
+    const key = asInt64(seed).toString();
+    if (seen.has(key)) return false;
+    checked++;
+    const hit = evaluateWorld(seed, filters);
+    if (!hit) return false;
+    seen.add(key);
+    results.push(hit);
+    return true;
+  };
+
+  const pickPillarSeed = (i) => {
+    if (!randomize) return pillarList[i % pillarList.length];
+    return pillarList[Number(randU32() % BigInt(pillarList.length))];
+  };
+
   if (pillarList && !hasWorldFilters) {
-    const extras = opts.startExtra ?? 0n;
-    for (let i = 0; i < maxResults; i++) {
-      const ps = pillarList[i % pillarList.length];
-      const extra = extras + BigInt(Math.floor(i / pillarList.length));
-      const seed = worldSeedFromPillar(ps, extra);
-      const hit = evaluateWorld(seed, { ...filters, pillarSeeds: undefined, pillars: undefined });
-      if (hit) results.push(hit);
-      checked++;
+    let i = 0;
+    let guard = 0;
+    while (results.length < maxResults && guard < maxResults * 80) {
+      if (shouldStop && shouldStop()) break;
+      const extra = randomize ? randU32() : BigInt(opts.startExtra ?? 0) + BigInt(Math.floor(i / pillarList.length));
+      const upper = randomize ? randU16() : 0n;
+      take(fullSeedFromPillar(pickPillarSeed(i), extra, upper));
+      i++;
+      guard++;
     }
     return { results, checked, pillarMatches: pillarList.length, exhausted: false };
   }
 
   if (pillarList) {
-    const startExtra = BigInt(opts.startExtra ?? 0);
     const set = new Set(pillarList);
-    let extra = startExtra;
+    filters = { ...filters, pillarSeeds: set };
+    let extra = BigInt(opts.startExtra ?? 0);
     while (checked < maxChecked && results.length < maxResults) {
       if (shouldStop && shouldStop()) break;
-      for (let i = 0; i < pillarList.length && checked < maxChecked && results.length < maxResults; i++) {
-        const seed = worldSeedFromPillar(pillarList[i], extra);
-        checked++;
-        const hit = evaluateWorld(seed, { ...filters, pillarSeeds: set });
-        if (hit) results.push(hit);
-        if (onProgress && checked % 25000 === 0) onProgress(checked, results.length);
-      }
+      const e = randomize ? randU32() : extra;
+      const upper = randomize ? randU16() : 0n;
+      take(fullSeedFromPillar(pickPillarSeed(checked), e, upper));
       extra += 1n;
+      if (onProgress && checked % 4000 === 0) onProgress(checked, results.length);
     }
     return { results, checked, pillarMatches: pillarList.length, exhausted: checked >= maxChecked };
   }
 
-  let seed = asInt64(opts.startSeed ?? 0);
+  let seed = randomize ? asInt64(randU32() | (randU32() << 32n)) : asInt64(opts.startSeed ?? 0);
   const step = BigInt(opts.step ?? 1);
   while (checked < maxChecked && results.length < maxResults) {
     if (shouldStop && shouldStop()) break;
-    const hit = evaluateWorld(seed, filters);
-    checked++;
-    if (hit) results.push(hit);
-    if (onProgress && checked % 25000 === 0) onProgress(checked, results.length);
-    seed = asInt64(seed + step);
+    take(seed);
+    if (onProgress && checked % 4000 === 0) onProgress(checked, results.length);
+    seed = randomize ? asInt64(randU32() | (randU32() << 32n)) : asInt64(seed + step);
   }
   return { results, checked, pillarMatches: null, exhausted: checked >= maxChecked };
 }
@@ -255,8 +294,8 @@ export function describePillarSpec(spec) {
 
 export const PRESETS = {
   easy_dragon: {
-    name: "Easy dragon fight",
-    blurb: "No cage on the spawn-facing tower, cages clustered on the far side.",
+    name: "Easier dragon",
+    blurb: "First tower has no cage. The two cages sit next to each other.",
     pillars: {
       slots: [{ guarded: false, maxHeight: 91 }, null, null, null, null, null, null, null, null, null],
       cageOff: [0],
@@ -264,40 +303,40 @@ export const PRESETS = {
     },
   },
   cages_far: {
-    name: "Cages on the far rim",
-    blurb: "Both iron cages sit on the −X half, away from the (100, 0) End spawn.",
+    name: "Cages far away",
+    blurb: "Both cages are on the far side of the island.",
     pillars: { cageOn: [4, 5] },
   },
   cages_near: {
-    name: "Cages next to spawn",
-    blurb: "Caged crystals on the +X towers — harder fight, useful if you want a specific layout.",
+    name: "Cages up front",
+    blurb: "Both cages are on the towers closest to where you enter the End.",
     pillars: { cageOn: [0, 9] },
   },
   tall_front: {
-    name: "Monument tower at spawn",
-    blurb: "The Y=103 pillar sits at (42, 0), the closest tower to End spawn.",
+    name: "Giant front tower",
+    blurb: "The tallest tower is the one you see first.",
     pillars: { tallestSlot: 0 },
   },
   short_front: {
-    name: "Short uncaged front",
-    blurb: "Lowest tower facing spawn, no cage — fastest first crystal.",
+    name: "Tiny first tower",
+    blurb: "The closest tower is short and has no cage.",
     pillars: { shortestSlot: 0, cageOff: [0] },
   },
   opposite_cages: {
-    name: "Opposite cages",
-    blurb: "The two cages sit across the ring from each other.",
+    name: "Cages across the ring",
+    blurb: "The two cages sit on opposite sides.",
     pillars: { cagesOpposite: true },
   },
   village_slime: {
-    name: "Village + slime + easy End",
-    blurb: "Village attempt near origin, several slime chunks, uncaged front pillar.",
+    name: "Village + slimes",
+    blurb: "A village and slime chunks near spawn, plus an easy first End tower.",
     pillars: { cageOff: [0] },
     slime: { radius: 6, min: 4 },
     structures: [{ id: "village", radius: 250 }],
   },
   nether_spawn: {
-    name: "Nether hub seed",
-    blurb: "Fortress and bastion generation attempts close to Nether 0,0 plus a ruined portal near origin.",
+    name: "Good Nether start",
+    blurb: "A fortress, a bastion, and a ruined portal close to 0, 0.",
     structures: [
       { id: "fortress", radius: 200 },
       { id: "bastion", radius: 280 },
@@ -305,8 +344,8 @@ export const PRESETS = {
     ],
   },
   late_game: {
-    name: "Ancient city + trial + stronghold",
-    blurb: "All three late-game structure attempts packed near the origin.",
+    name: "Late-game nearby",
+    blurb: "An ancient city, trial chambers, and a closer stronghold.",
     structures: [
       { id: "ancient_city", radius: 400 },
       { id: "trial_chambers", radius: 350 },

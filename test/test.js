@@ -4,6 +4,7 @@ import {
   pillarsFromPillarSeed,
   getEndPillars,
   worldSeedFromPillar,
+  fullSeedFromPillar,
   isSlimeChunk,
   getStructurePos,
   STRUCTURES,
@@ -11,6 +12,7 @@ import {
   isBuriedTreasureChunk,
 } from "../js/worldgen.js";
 import { collectMatchingPillarSeeds, searchSeeds } from "../js/finder.js";
+import { guessSpawnBiome } from "../js/biome.js";
 
 let passed = 0;
 let failed = 0;
@@ -172,6 +174,26 @@ console.log("Finder");
   for (const r of search.results) {
     assert(!r.pillars[0].guarded, "front uncaged");
   }
+}
+
+console.log("Variety + spawn guess");
+{
+  const a = searchSeeds({ pillars: { tallestSlot: 0 } }, { maxResults: 6, randomize: true });
+  const seen = new Set(a.results.map((r) => r.seed));
+  const b = searchSeeds({ pillars: { tallestSlot: 0 } }, { maxResults: 6, randomize: true, exclude: seen });
+  const overlap = b.results.filter((r) => seen.has(r.seed));
+  assert(a.results.length === 6 && b.results.length === 6, "two random batches each return 6 seeds");
+  assert(overlap.length === 0, "second batch skips seeds already shown");
+  assert(new Set(a.results.map((r) => r.seed)).size === 6, "first batch seeds are unique");
+  assert(a.results.every((r) => r.spawn && r.spawn.name), "results include a spawn guess");
+}
+{
+  const g1 = guessSpawnBiome(12345n);
+  const g2 = guessSpawnBiome(12345n);
+  assertEq(g1.name, g2.name, "spawn guess is deterministic");
+  assert(typeof g1.family === "string" && g1.family.length > 0, "spawn guess has a family");
+  const mixed = fullSeedFromPillar(getPillarSeed(12345n), 99n, 7n);
+  assertEq(getPillarSeed(mixed), getPillarSeed(12345n), "upper bits keep the same End");
 }
 
 console.log("\n" + passed + " passed,", failed + " failed");

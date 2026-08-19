@@ -4,7 +4,6 @@ import {
   PILLAR_HEIGHTS,
   inspectSeed,
   pillarsFromPillarSeed,
-  getPillarSeed,
 } from "./worldgen.js";
 import { PRESETS, collectMatchingPillarSeeds } from "./finder.js";
 
@@ -12,6 +11,7 @@ const $ = (id) => document.getElementById(id);
 
 let worker = null;
 let searching = false;
+const seenSeeds = new Set();
 
 function svgEl(name, attrs) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", name);
@@ -107,8 +107,11 @@ function renderInspect(data) {
   $("meta-struct").textContent = data.structureSeed;
   $("meta-shadow").textContent = data.shadowSeed;
   $("meta-sh").textContent = `${data.stronghold.x}, ${data.stronghold.z}`;
-  $("meta-slime").textContent = String(data.slime.length);
+  if ($("meta-slime")) $("meta-slime").textContent = String(data.slime.length);
   $("meta-cages").textContent = "2 of 10";
+  if (data.spawn) {
+    $("meta-spawn").textContent = `${data.spawn.icon} ${data.spawn.name}`;
+  }
 
   drawPillars($("pillar-svg"), data.pillars);
   fillPillarTable($("pillar-table"), data.pillars);
@@ -211,6 +214,8 @@ function readFilters() {
   if (structures.length) filters.structures = structures;
   if ($("flt-treasure").checked) filters.buriedTreasure = { radiusChunks: 12 };
   if ($("flt-stronghold").checked) filters.stronghold = { maxDistance: Number($("sh-dist").value) || 1600 };
+  const spawnBiome = $("spawn-biome")?.value;
+  if (spawnBiome) filters.spawnBiome = spawnBiome;
   return filters;
 }
 
@@ -252,6 +257,8 @@ function applyPreset(id) {
   });
   $("flt-treasure").checked = !!p.buriedTreasure;
   $("flt-stronghold").checked = !!p.stronghold;
+  seenSeeds.clear();
+  if ($("search-btn")) $("search-btn").textContent = "Find seeds";
   updateMatchCount();
 }
 
@@ -285,6 +292,7 @@ function showResults(pack) {
   root.innerHTML = pack.results
     .map((r) => {
       const cage = r.cages.map((c) => `${c.x}, ${c.z}`).join(" and ");
+      const start = r.spawn ? `${r.spawn.icon} ${r.spawn.name}` : "";
       return `<article class="result">
         <div class="result-head">
           <b class="mono">${r.seed}</b>
@@ -293,7 +301,7 @@ function showResults(pack) {
             <button class="copy" data-inspect="${r.seed}">See the map</button>
           </span>
         </div>
-        <div class="note">Cages at ${cage}</div>
+        <div class="note">${start ? `${start} · ` : ""}Cages at ${cage}</div>
         <ol>${(r.reasons || []).map((x) => `<li>${x}</li>`).join("")}</ol>
       </article>`;
     })
@@ -346,7 +354,14 @@ function startSearch() {
   $("stop-btn").disabled = false;
   ensureWorker().postMessage({
     type: "search",
-    payload: { filters, maxResults, maxChecked, startSeed: startSeed.toString() },
+    payload: {
+      filters,
+      maxResults,
+      maxChecked,
+      startSeed: startSeed.toString(),
+      randomize: true,
+      exclude: [...seenSeeds],
+    },
   });
 }
 

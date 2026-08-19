@@ -29,7 +29,8 @@ self.onmessage = (ev) => {
     maxResults: payload.maxResults ?? 20,
     maxChecked: payload.maxChecked ?? 1_500_000,
     startSeed: payload.startSeed ?? 0,
-    startExtra: payload.startExtra ?? (BigInt(payload.startSeed ?? 0) & 0xffffffffn),
+    randomize: payload.randomize !== false,
+    exclude: payload.exclude || [],
     shouldStop: () => stop,
     onProgress: (checked, found) => {
       self.postMessage({ type: "progress", checked, found });

@@ -6,6 +6,7 @@
  * Structures: Java 1.18.2 – 1.21 placement (48-bit structure seed)
  */
 import { JavaRandom, asInt64, lcgPrev } from "./java-random.js";
+import { guessSpawnBiome } from "./biome.js";
 
 export const PILLAR_HEIGHTS = [76, 79, 82, 85, 88, 91, 94, 97, 100, 103];
 export const PILLAR_RADII = [2, 2, 2, 3, 3, 3, 4, 4, 4, 5];
@@ -80,6 +81,13 @@ export function worldSeedFromPillar(pillarSeed, extra = 0n) {
   state = lcgPrev(state);
   state = lcgPrev(state);
   return asInt64(state ^ 0x5deece66dn);
+}
+
+/** Same End pillars, different overworld — upper 16 bits change biomes / terrain. */
+export function fullSeedFromPillar(pillarSeed, extra = 0n, upper16 = 0n) {
+  const base = worldSeedFromPillar(pillarSeed, extra);
+  const s48 = BigInt(base) & ((1n << 48n) - 1n);
+  return asInt64(s48 | ((BigInt(upper16) & 0xffffn) << 48n));
 }
 
 export function isSlimeChunk(worldSeed, chunkX, chunkZ) {
@@ -290,5 +298,6 @@ export function inspectSeed(worldSeed, options = {}) {
     slime: slimeChunksInArea(seed, -slimeRadius, -slimeRadius, slimeRadius, slimeRadius),
     treasures: findBuriedTreasure(seed, Math.min(24, Math.ceil(radius / 16))),
     structures,
+    spawn: guessSpawnBiome(seed),
   };
 }
