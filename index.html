@@ -22,6 +22,7 @@
         <nav class="tabs" aria-label="Mode">
           <button class="active" data-tab="inspect">Look up a seed</button>
           <button data-tab="find">Find me a seed</button>
+          <button data-tab="biomes">Biomes at X, Z</button>
         </nav>
       </header>
 
@@ -176,10 +177,36 @@
         </div>
       </section>
 
+      <section id="view-biomes" class="hidden">
+        <div class="panel">
+          <h2>Find a seed by biome at coordinates</h2>
+          <p class="note">
+            This uses <b>cubiomes</b> — the same Java 1.21 biome math as Chunkbase.
+            Add rows like “plains at 0, 0” and “desert at 800, 200”.
+          </p>
+          <div class="row">
+            <label class="field grow">
+              Check this seed
+              <input id="biome-seed" class="mono" type="text" placeholder="optional — paste a seed to look up" />
+            </label>
+            <button class="btn secondary" id="biome-lookup" type="button">What’s at these coords?</button>
+          </div>
+          <h3>I want these biomes</h3>
+          <div id="biome-rows"></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn secondary" id="biome-add" type="button">Add another point</button>
+            <label class="field">How many seeds<input id="biome-count" type="number" value="5" min="1" max="15" /></label>
+            <button class="btn" id="biome-find" type="button">Find biome seeds</button>
+          </div>
+          <p class="note" id="biome-status">Ready. Example: plains at 0,0.</p>
+          <div id="biome-results"></div>
+        </div>
+      </section>
+
       <footer>
-        Works with Minecraft Java Edition. Paste the seed on the create-world screen.
+        End towers are exact. Biome search is real Java 1.21 via cubiomes. Paste the seed on the create-world screen.
       </footer>
     </div>
-    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/app.js?v=6"></script>
   </body>
 </html>

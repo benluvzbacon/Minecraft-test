@@ -10,7 +10,12 @@ import { PRESETS, collectMatchingPillarSeeds, searchSeeds, evaluateWorld } from 
 const $ = (id) => document.getElementById(id);
 
 let searching = false;
-const seenSeeds = new Set(JSON.parse(sessionStorage.getItem("seenSeeds") || "[]"));
+let seenSeeds = new Set();
+try {
+  seenSeeds = new Set(JSON.parse(sessionStorage.getItem("seenSeeds") || "[]"));
+} catch {
+  seenSeeds = new Set();
+}
 
 function svgEl(name, attrs) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", name);
@@ -213,8 +218,6 @@ function readFilters() {
   if (structures.length) filters.structures = structures;
   if ($("flt-treasure").checked) filters.buriedTreasure = { radiusChunks: 12 };
   if ($("flt-stronghold").checked) filters.stronghold = { maxDistance: Number($("sh-dist").value) || 1600 };
-  const spawnBiome = $("spawn-biome")?.value;
-  if (spawnBiome) filters.spawnBiome = spawnBiome;
   return filters;
 }
 
@@ -321,21 +324,21 @@ function rememberSeeds(list) {
 }
 
 function startSearch() {
-  if (searching) return;
+  searching = false;
   const filters = readFilters();
-  const maxResults = Math.max(1, Math.min(40, Number($("max-results").value) || 8));
+  const maxResults = Math.max(1, Math.min(40, Number($("max-results")?.value) || 8));
   const typed = String($("start-seed")?.value || "").trim();
-  $("results").innerHTML = "<p class='note'>Looking for new worlds…</p>";
-  $("bar").style.width = "20%";
-  $("search-status").textContent = "Looking for new worlds…";
+  if ($("results")) $("results").innerHTML = "<p class='note'>Looking for new worlds…</p>";
+  if ($("bar")) $("bar").style.width = "20%";
+  if ($("search-status")) $("search-status").textContent = "Looking for new worlds…";
+  if ($("search-btn")) $("search-btn").disabled = true;
   searching = true;
-  $("search-btn").disabled = true;
 
   window.setTimeout(() => {
     try {
       const pack = searchSeeds(filters, {
         maxResults,
-        maxChecked: 250000,
+        maxChecked: 80000,
         randomize: true,
         exclude: seenSeeds,
         startSeed: typed ? parseSeed(typed) : undefined,
@@ -347,26 +350,137 @@ function startSearch() {
         }
       }
       rememberSeeds(pack.results.map((r) => r.seed));
-      $("bar").style.width = "100%";
-      $("search-btn").disabled = false;
-      $("search-btn").textContent = "Find different seeds";
+      if ($("bar")) $("bar").style.width = "100%";
+      if ($("search-btn")) {
+        $("search-btn").disabled = false;
+        $("search-btn").textContent = "Find different seeds";
+      }
       searching = false;
-      $("search-status").textContent = pack.results.length
-        ? `Here are ${pack.results.length} new seeds. Click again for another batch.`
-        : "Nothing this time. Change a height or uncheck something and try again.";
+      if ($("search-status")) {
+        $("search-status").textContent = pack.results.length
+          ? `Here are ${pack.results.length} new seeds. Click again for another batch.`
+          : "Nothing this time. Change a height or uncheck something and try again.";
+      }
       showResults(pack);
     } catch (err) {
       searching = false;
-      $("search-btn").disabled = false;
-      $("search-status").innerHTML = `<span class="err">${err.message || err}</span>`;
+      if ($("search-btn")) $("search-btn").disabled = false;
+      if ($("search-status")) $("search-status").innerHTML = `<span class="err">${err.message || err}</span>`;
     }
-  }, 40);
+  }, 30);
 }
 
 function switchTab(name) {
   document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
-  $("view-inspect").classList.toggle("hidden", name !== "inspect");
-  $("view-find").classList.toggle("hidden", name !== "find");
+  $("view-inspect")?.classList.toggle("hidden", name !== "inspect");
+  $("view-find")?.classList.toggle("hidden", name !== "find");
+  $("view-biomes")?.classList.toggle("hidden", name !== "biomes");
+}
+
+const BIOME_CHOICES = [
+  "plains", "sunflower_plains", "meadow", "cherry_grove", "forest", "flower_forest",
+  "birch_forest", "dark_forest", "taiga", "snowy_taiga", "snowy_plains", "ice_spikes",
+  "desert", "savanna", "badlands", "jungle", "sparse_jungle", "bamboo_jungle",
+  "swamp", "mangrove_swamp", "mushroom_fields", "beach", "ocean", "warm_ocean",
+  "lukewarm_ocean", "cold_ocean", "frozen_ocean", "river", "jagged_peaks",
+  "stony_peaks", "grove", "pale_garden",
+];
+
+function biomeSelect(selected) {
+  return BIOME_CHOICES.map((b) => `<option value="${b}" ${b === selected ? "selected" : ""}>${b.replaceAll("_", " ")}</option>`).join("");
+}
+
+function addBiomeRow(x = 0, z = 0, biome = "plains") {
+  const root = $("biome-rows");
+  if (!root) return;
+  const row = document.createElement("div");
+  row.className = "row biome-row";
+  row.innerHTML = `
+    <label class="field">X<input type="number" data-k="x" value="${x}" /></label>
+    <label class="field">Z<input type="number" data-k="z" value="${z}" /></label>
+    <label class="field grow">Biome<select data-k="biome">${biomeSelect(biome)}</select></label>
+    <button type="button" class="btn secondary biome-del">Remove</button>`;
+  row.querySelector(".biome-del").addEventListener("click", () => row.remove());
+  root.appendChild(row);
+}
+
+function readBiomePoints() {
+  return [...document.querySelectorAll("#biome-rows .biome-row")].map((row) => ({
+    x: Number(row.querySelector('[data-k="x"]').value) || 0,
+    z: Number(row.querySelector('[data-k="z"]').value) || 0,
+    biome: row.querySelector('[data-k="biome"]').value,
+  }));
+}
+
+async function lookupBiomeAt() {
+  const status = $("biome-status");
+  const seed = $("biome-seed").value.trim();
+  const points = readBiomePoints();
+  if (!seed) {
+    status.textContent = "Type a seed first, or use Find biome seeds below.";
+    return;
+  }
+  status.textContent = "Checking cubiomes…";
+  const bits = [];
+  for (const p of points) {
+    const res = await fetch("/api/biomes/at", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seed, x: p.x, z: p.z, mc: "1.21" }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    bits.push(`At ${data.x}, ${data.z} this seed is <b>${(data.name || "").replaceAll("_", " ")}</b>`);
+  }
+  status.innerHTML = bits.join("<br>");
+}
+
+async function searchBiomes() {
+  const status = $("biome-status");
+  const out = $("biome-results");
+  const points = readBiomePoints();
+  if (!points.length) {
+    status.textContent = "Add at least one X / Z / biome row.";
+    return;
+  }
+  status.textContent = "Searching real Java 1.21 biomes (cubiomes)… this can take a few seconds.";
+  out.innerHTML = "";
+  $("biome-find").disabled = true;
+  try {
+    const res = await fetch("/api/biomes/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ points, count: Number($("biome-count").value) || 5, max: 12000, mc: "1.21" }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (!data.hits || !data.hits.length) {
+      status.textContent = `Checked ${data.checked || 0} seeds and found none. Try fewer points or a more common biome.`;
+      return;
+    }
+    status.textContent = `Found ${data.found} after ${data.checked} checks. These match Java 1.21.`;
+    out.innerHTML = data.hits
+      .map((h) => {
+        const pts = (h.points || [])
+          .map((p) => `${p.x}, ${p.z} = ${(p.name || "").replaceAll("_", " ")}`)
+          .join(" · ");
+        return `<article class="result">
+          <div class="result-head">
+            <b class="mono">${h.seed}</b>
+            <span>
+              <button class="copy" data-copy="${h.seed}">Copy seed</button>
+              <button class="copy" data-inspect="${h.seed}">See the End</button>
+            </span>
+          </div>
+          <div class="note">${pts}</div>
+        </article>`;
+      })
+      .join("");
+  } catch (err) {
+    status.innerHTML = `<span class="err">${err.message || err}</span>`;
+  } finally {
+    $("biome-find").disabled = false;
+  }
 }
 
 function init() {
@@ -393,12 +507,21 @@ function init() {
   document.querySelectorAll(".tabs button").forEach((b) => {
     b.addEventListener("click", () => switchTab(b.dataset.tab));
   });
-  $("search-btn").addEventListener("click", startSearch);
-  $("stop-btn").addEventListener("click", startSearch);
-  $("slot-editor").addEventListener("change", updateMatchCount);
+  $("search-btn")?.addEventListener("click", startSearch);
+  $("stop-btn")?.addEventListener("click", startSearch);
+  $("slot-editor")?.addEventListener("change", updateMatchCount);
   document.querySelectorAll("#find-toggles input").forEach((el) => el.addEventListener("change", updateMatchCount));
 
-  $("results").addEventListener("click", (e) => {
+  $("biome-add")?.addEventListener("click", () => addBiomeRow(0, 0, "plains"));
+  $("biome-find")?.addEventListener("click", () => searchBiomes().catch((e) => {
+    $("biome-status").innerHTML = `<span class="err">${e.message}</span>`;
+  }));
+  $("biome-lookup")?.addEventListener("click", () => lookupBiomeAt().catch((e) => {
+    $("biome-status").innerHTML = `<span class="err">${e.message}</span>`;
+  }));
+  if ($("biome-rows") && !$("biome-rows").children.length) addBiomeRow(0, 0, "plains");
+
+  document.body.addEventListener("click", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
     if (t.dataset.copy) {
@@ -421,4 +544,11 @@ function init() {
   updateMatchCount();
 }
 
-init();
+try {
+  init();
+} catch (err) {
+  document.body.insertAdjacentHTML(
+    "afterbegin",
+    `<p class="err" style="padding:12px">Page failed to start: ${err.message}. Hard-refresh (Ctrl+Shift+R).</p>`
+  );
+}
