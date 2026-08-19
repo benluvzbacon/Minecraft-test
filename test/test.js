@@ -186,6 +186,14 @@ console.log("Variety + spawn guess");
   assert(overlap.length === 0, "second batch skips seeds already shown");
   assert(new Set(a.results.map((r) => r.seed)).size === 6, "first batch seeds are unique");
   assert(a.results.every((r) => r.spawn && r.spawn.name), "results include a spawn guess");
+  assert(
+    a.results.every((r) => {
+      const n = BigInt(r.seed);
+      const mag = n < 0n ? -n : n;
+      return mag > 1n << 40n;
+    }),
+    "random seeds are large, not tiny internet-list numbers"
+  );
 }
 {
   const g1 = guessSpawnBiome(12345n);

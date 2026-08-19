@@ -83,22 +83,36 @@ function countSlimeNearOrigin(seed, radiusChunks, minCount) {
   return n;
 }
 
-function randU32() {
-  let n = 0n;
+function randU64() {
   if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    const a = new Uint32Array(1);
+    const a = new Uint32Array(2);
     crypto.getRandomValues(a);
-    n = BigInt(a[0]);
-  } else {
-    n = BigInt(Math.floor(Math.random() * 0x100000000));
+    return (BigInt(a[1]) << 32n) | BigInt(a[0]);
   }
-  n ^= BigInt(Date.now() & 0xffffffff);
-  if (typeof performance !== "undefined") n ^= BigInt(Math.floor(performance.now() * 1000) & 0xffffffff);
-  return n & 0xffffffffn;
+  return (
+    (BigInt(Math.floor(Math.random() * 0x100000000)) << 32n) ^
+    BigInt(Math.floor(Math.random() * 0x100000000)) ^
+    (BigInt(Date.now()) << 17n) ^
+    BigInt(Math.floor(Math.random() * 0x7fffffff))
+  );
 }
 
-function randU16() {
-  return randU32() & 0xffffn;
+/** Big signed seed like Minecraft's random worlds — 16+ digits, not 12345. */
+export function bigRandomSeed() {
+  for (let i = 0; i < 24; i++) {
+    const n = asInt64(randU64());
+    const mag = n < 0n ? -n : n;
+    if (mag > 1n << 52n) return n;
+  }
+  return asInt64(randU64() | (0xC000n << 48n));
+}
+
+function bigSeedForPillar(pillarSeed) {
+  const extra = randU64() & 0xffffffffn;
+  let upper = (randU64() >> 16n) & 0xffffn;
+  if (upper < 0x1000n) upper ^= 0xBEEFn;
+  if (upper === 0n) upper = 0xA5A5n;
+  return fullSeedFromPillar(pillarSeed, extra, upper);
 }
 
 export function evaluateWorld(worldSeed, filters) {
@@ -223,7 +237,7 @@ export function searchSeeds(filters, opts = {}) {
 
   const pickPillarSeed = (i) => {
     if (!randomize) return pillarList[i % pillarList.length];
-    return pillarList[Number(randU32() % BigInt(pillarList.length))];
+    return pillarList[Number(randU64() % BigInt(pillarList.length))];
   };
 
   if (pillarList && !hasWorldFilters) {
@@ -231,9 +245,16 @@ export function searchSeeds(filters, opts = {}) {
     let guard = 0;
     while (results.length < maxResults && guard < maxResults * 80) {
       if (shouldStop && shouldStop()) break;
-      const extra = randomize ? randU32() : BigInt(opts.startExtra ?? 0) + BigInt(Math.floor(i / pillarList.length));
-      const upper = randomize ? randU16() : 0n;
-      take(fullSeedFromPillar(pickPillarSeed(i), extra, upper));
+      if (randomize) take(bigSeedForPillar(pickPillarSeed(i)));
+      else {
+        take(
+          fullSeedFromPillar(
+            pickPillarSeed(i),
+            BigInt(opts.startExtra ?? 0) + BigInt(Math.floor(i / pillarList.length)),
+            0n
+          )
+        );
+      }
       i++;
       guard++;
     }
@@ -246,22 +267,23 @@ export function searchSeeds(filters, opts = {}) {
     let extra = BigInt(opts.startExtra ?? 0);
     while (checked < maxChecked && results.length < maxResults) {
       if (shouldStop && shouldStop()) break;
-      const e = randomize ? randU32() : extra;
-      const upper = randomize ? randU16() : 0n;
-      take(fullSeedFromPillar(pickPillarSeed(checked), e, upper));
-      extra += 1n;
+      if (randomize) take(bigSeedForPillar(pickPillarSeed(checked)));
+      else {
+        take(fullSeedFromPillar(pickPillarSeed(checked), extra, 0n));
+        extra += 1n;
+      }
       if (onProgress && checked % 4000 === 0) onProgress(checked, results.length);
     }
     return { results, checked, pillarMatches: pillarList.length, exhausted: checked >= maxChecked };
   }
 
-  let seed = randomize ? asInt64(randU32() | (randU32() << 32n)) : asInt64(opts.startSeed ?? 0);
-  const step = BigInt(opts.step ?? 1);
   while (checked < maxChecked && results.length < maxResults) {
     if (shouldStop && shouldStop()) break;
+    const seed = randomize
+      ? bigRandomSeed()
+      : asInt64(BigInt(opts.startSeed ?? 0) + BigInt(checked) * BigInt(opts.step ?? 1));
     take(seed);
     if (onProgress && checked % 4000 === 0) onProgress(checked, results.length);
-    seed = randomize ? asInt64(randU32() | (randU32() << 32n)) : asInt64(seed + step);
   }
   return { results, checked, pillarMatches: null, exhausted: checked >= maxChecked };
 }

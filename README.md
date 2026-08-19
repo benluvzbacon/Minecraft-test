@@ -7,7 +7,17 @@ A simple Java Edition tool:
 
 ## Run it
 
-Open `index.html` in a browser (or serve the folder), or:
+```bash
+python3 server.py
+```
+
+Then open the site. Three tabs:
+
+1. **Look up a seed** — End towers for any number.
+2. **Find me a seed** — pick cage / height rules, get new seeds each click.
+3. **Biomes at X, Z** — real Java 1.21 biomes via cubiomes (e.g. desert at 0,0).
+
+Or:
 
 ```bash
 python3 -m http.server 8080 --bind 0.0.0.0
