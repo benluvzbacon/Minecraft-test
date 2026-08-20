@@ -45,17 +45,49 @@ cd Minecraft-test
 
 ## Run the website
 
-From the project folder:
+`server.py` is a **web server**, not a page. Run it with Python, then open the address below. Do **not** open `server.py` itself in the browser (that is how you would see `#!/usr/bin/env python3`).
+
+### Windows (Command Prompt or PowerShell)
+
+1. Install Python from [python.org](https://www.python.org/downloads/) and tick **Add python.exe to PATH**.
+2. Open the project folder (`Minecraft-test`).
+3. In that folder, run:
+
+```bat
+python server.py
+```
+
+If `python` is not found, use:
+
+```bat
+py -3 server.py
+```
+
+4. Leave that window open. Open a browser to **http://127.0.0.1:8080**
+5. You should see the Seed Finder website (title **Minecraft Seed Finder**), not Python source.
+
+To stop the server: click the terminal window and press **Ctrl+C**.
+
+If port 8080 is already used, close the other program or set a port:
+
+```bat
+set PORT=8081
+python server.py
+```
+
+Then open **http://127.0.0.1:8081**.
+
+### Mac / Linux
 
 ```bash
 python3 server.py
 ```
 
-Then open **http://127.0.0.1:8080** in your browser.
+Then open **http://127.0.0.1:8080**.
 
 `server.py` does two jobs:
 
-1. Serves the page
+1. Serves `index.html`, CSS, and JavaScript (never its own source)
 2. Talks to **cubiomes** for real biomes and confirmed villages
 
 If you only open `index.html` as a file, End lookup still works, but **Biomes at X, Z** and **village (biome-checked)** will not.

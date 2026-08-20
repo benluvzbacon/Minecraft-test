@@ -6,6 +6,6 @@
   "description": "Exact Java Edition End-pillar and structure seed finder",
   "scripts": {
     "test": "node test/test.js",
-    "start": "python3 server.py"
+    "start": "python server.py"
   }
 }
