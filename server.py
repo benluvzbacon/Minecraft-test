@@ -10,11 +10,16 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import socket
 import subprocess
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import sys
+import traceback
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlparse
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+if not ROOT:
+    ROOT = os.getcwd()
 TOOL = os.path.join(ROOT, "native", "biome_tool")
 INDEX = os.path.join(ROOT, "index.html")
 
@@ -66,27 +71,105 @@ BIOMES = [
 ]
 
 
-class Handler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=ROOT, **kwargs)
+def _read_index():
+    for candidate in (INDEX, os.path.join(os.getcwd(), "index.html")):
+        try:
+            if candidate and os.path.isfile(candidate):
+                with open(candidate, "rb") as fh:
+                    return fh.read()
+        except OSError:
+            continue
+    return (
+        b"<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+        b"<title>Minecraft Seed Finder</title></head><body>"
+        b"<h1>index.html is missing</h1>"
+        b"<p>Run server.py from the project folder.</p></body></html>"
+    )
 
-    def end_headers(self):
-        self.send_header("Cache-Control", "no-store, max-age=0")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        super().end_headers()
 
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.end_headers()
+class Handler(BaseHTTPRequestHandler):
+    # HTTP/1.1 + Connection: close so Chrome always gets a finished reply.
+    protocol_version = "HTTP/1.1"
+    close_connection = True
+    timeout = 30
+
+    def log_message(self, fmt, *args):
+        try:
+            sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
+            sys.stderr.flush()
+        except Exception:
+            pass
+
+    def handle_one_request(self):
+        """Never drop a connection without writing an HTTP response."""
+        try:
+            self.raw_requestline = self.rfile.readline(65537)
+            if not self.raw_requestline:
+                self.close_connection = True
+                return
+            if len(self.raw_requestline) > 65536:
+                self._send(414, b"URI too long", "text/plain; charset=utf-8")
+                return
+            if not self.parse_request():
+                if not getattr(self, "_wrote", False):
+                    self._serve_index()
+                return
+            method = getattr(self, "do_" + self.command, None)
+            if method is None:
+                self._serve_index()
+                return
+            method()
+            try:
+                self.wfile.flush()
+            except Exception:
+                pass
+        except Exception:
+            traceback.print_exc()
+            try:
+                if not getattr(self, "_wrote", False):
+                    self._serve_index()
+            except Exception:
+                self.close_connection = True
+
+    def _send(self, code, body, content_type, extra_headers=None):
+        """Write a complete HTTP response in one shot, then flush."""
+        if body is None:
+            body = b""
+        if isinstance(body, str):
+            body = body.encode("utf-8")
+        reason = {
+            200: "OK",
+            204: "No Content",
+            400: "Bad Request",
+            404: "Not Found",
+            414: "URI Too Long",
+            500: "Internal Server Error",
+        }.get(code, "OK")
+        headers = [
+            "HTTP/1.1 %s %s" % (code, reason),
+            "Content-Type: %s" % content_type,
+            "Content-Length: %s" % len(body),
+            "Connection: close",
+            "Cache-Control: no-store, max-age=0",
+            "Access-Control-Allow-Origin: *",
+            "Access-Control-Allow-Headers: Content-Type",
+            "Access-Control-Allow-Methods: GET, POST, OPTIONS, HEAD",
+        ]
+        if extra_headers:
+            headers.extend(extra_headers)
+        blob = ("\r\n".join(headers) + "\r\n\r\n").encode("ascii") + body
+        self.wfile.write(blob)
+        self.wfile.flush()
+        self.close_connection = True
+        self._wrote = True
+        try:
+            self.log_request(code, len(body))
+        except Exception:
+            pass
 
     def _json(self, code, obj):
         data = json.dumps(obj).encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        self._send(code, data, "application/json; charset=utf-8")
 
     def _read_json(self):
         n = int(self.headers.get("Content-Length") or 0)
@@ -94,30 +177,20 @@ class Handler(SimpleHTTPRequestHandler):
         return json.loads(raw.decode("utf-8") or "{}")
 
     def _clean_path(self):
-        return unquote(urlparse(self.path).path)
-
-    def _send_bytes(self, code, body, content_type):
-        if isinstance(body, str):
-            body = body.encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        raw = getattr(self, "path", "/") or "/"
+        return unquote(urlparse(raw).path)
 
     def _serve_index(self):
-        with open(INDEX, "rb") as fh:
-            data = fh.read()
-        self._send_bytes(200, data, "text/html; charset=utf-8")
+        self._send(200, _read_index(), "text/html; charset=utf-8")
 
     def _safe_file(self, url_path):
-        """Map a URL path to a file under ROOT, or None."""
         rel = url_path.lstrip("/")
         if not rel or rel.endswith("/"):
             return None
-        candidate = os.path.realpath(os.path.join(ROOT, rel))
+        candidate = os.path.realpath(os.path.join(ROOT, rel.replace("/", os.sep)))
         root_real = os.path.realpath(ROOT)
-        if not (candidate == root_real or candidate.startswith(root_real + os.sep)):
+        prefix = root_real if root_real.endswith(os.sep) else root_real + os.sep
+        if candidate != root_real and not candidate.lower().startswith(prefix.lower()):
             return None
         if not os.path.isfile(candidate):
             return None
@@ -148,42 +221,65 @@ class Handler(SimpleHTTPRequestHandler):
         guessed, _ = mimetypes.guess_type(filepath)
         return guessed or "application/octet-stream"
 
-    def do_GET(self):
+    def do_OPTIONS(self):
+        self._send(204, b"", "text/plain")
+
+    def do_HEAD(self):
         path = self._clean_path()
-
-        if path == "/api/biomes":
-            self._json(200, {"biomes": BIOMES, "engine": "cubiomes", "mc": "1.21"})
-            return
-        if path == "/api/health":
-            self._json(200, {"ok": True, "tool": os.path.exists(TOOL)})
-            return
-
-        # Homepage and any request that would have shown this script.
         if path in ("", "/", "/index.html", "/index.htm", "/server.py"):
-            self._serve_index()
+            body = _read_index()
+            self._send(200, b"", "text/html; charset=utf-8", extra_headers=[
+                "Content-Length: %s" % len(body),
+            ])
             return
-
-        ext = os.path.splitext(path)[1].lower()
-        if ext in BLOCKED_EXT:
-            # Do not display Python / C source in the browser.
-            self._serve_index()
-            return
-
         filepath = self._safe_file(path)
-        if filepath:
-            with open(filepath, "rb") as fh:
-                data = fh.read()
-            self._send_bytes(200, data, self._guess_type(filepath))
+        if not filepath:
+            self._send(404, b"", "text/plain")
             return
+        size = os.path.getsize(filepath)
+        self._send(200, b"", self._guess_type(filepath), extra_headers=[
+            "Content-Length: %s" % size,
+        ])
 
-        self.send_error(404, "File not found")
+    def do_GET(self):
+        try:
+            path = self._clean_path()
+
+            if path == "/api/biomes":
+                self._json(200, {"biomes": BIOMES, "engine": "cubiomes", "mc": "1.21"})
+                return
+            if path == "/api/health":
+                self._json(200, {"ok": True, "tool": os.path.exists(TOOL)})
+                return
+
+            if path in ("", "/", "/index.html", "/index.htm", "/server.py"):
+                self._serve_index()
+                return
+
+            ext = os.path.splitext(path)[1].lower()
+            if ext in BLOCKED_EXT:
+                self._serve_index()
+                return
+
+            filepath = self._safe_file(path)
+            if filepath:
+                with open(filepath, "rb") as fh:
+                    data = fh.read()
+                self._send(200, data, self._guess_type(filepath))
+                return
+
+            self._send(404, b"File not found", "text/plain; charset=utf-8")
+        except Exception:
+            traceback.print_exc()
+            if not getattr(self, "_wrote", False):
+                self._serve_index()
 
     def do_POST(self):
         path = self._clean_path()
         try:
             body = self._read_json()
         except Exception as exc:
-            return self._json(400, {"error": f"bad json: {exc}"})
+            return self._json(400, {"error": "bad json: %s" % exc})
 
         if path == "/api/biomes/at":
             seed = str(body.get("seed", "0"))
@@ -343,14 +439,32 @@ class Handler(SimpleHTTPRequestHandler):
         self._json(404, {"error": "not found"})
 
 
+class Server(ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+    request_queue_size = 64
+
+    def server_bind(self):
+        try:
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        except OSError:
+            pass
+        try:
+            self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError:
+            pass
+        super().server_bind()
+
+    def handle_error(self, request, client_address):
+        traceback.print_exc()
+
+
 def main():
-    # Default is the address you open in the browser. HOST=0.0.0.0 is for previews.
     host = os.environ.get("HOST", "127.0.0.1")
     port = int(os.environ.get("PORT", "8080"))
-    ThreadingHTTPServer.allow_reuse_address = True
-    httpd = ThreadingHTTPServer((host, port), Handler)
-    print(f"Website: http://127.0.0.1:{port}", flush=True)
-    print(f"listening on {host}:{port}", flush=True)
+    httpd = Server((host, port), Handler)
+    print("Website: http://127.0.0.1:%s" % port, flush=True)
+    print("listening on %s:%s" % (host, port), flush=True)
     print("Serving index.html — not server.py", flush=True)
     httpd.serve_forever()
 
