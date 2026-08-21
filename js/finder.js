@@ -379,4 +379,8 @@ export const PRESETS = {
     ],
     stronghold: { maxDistance: 1600 },
   },
+  impossible: {
+    name: "Impossible spawn",
+    blurb: "You start in a dripstone cave, walled in, lava under a thin floor.",
+  },
 };

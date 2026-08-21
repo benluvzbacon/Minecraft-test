@@ -176,8 +176,8 @@ button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
 
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-@media (max-width: 800px) { .stats { grid-template-columns: 1fr 1fr; } }
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+@media (max-width: 900px) { .stats { grid-template-columns: 1fr 1fr; } }
 .stat {
   background: #10081c;
   border: 1px solid var(--line);

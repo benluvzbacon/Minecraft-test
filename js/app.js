@@ -158,11 +158,25 @@ function inspectFromInput() {
     .then((r) => r.json())
     .then((s) => {
       if (s.error || !s.biome) return;
-      if ($("meta-spawn")) $("meta-spawn").textContent = s.biome.replaceAll("_", " ");
+      if ($("meta-spawn")) {
+        $("meta-spawn").textContent = s.impossible
+          ? `⚠ cave/lava at ${s.x}, ${s.z}`
+          : s.biome.replaceAll("_", " ");
+      }
+      if (s.stronghold) {
+        if ($("meta-sh")) $("meta-sh").textContent = `${s.stronghold.x}, ${s.stronghold.z}`;
+        if ($("meta-eyes")) $("meta-eyes").textContent = `${s.stronghold.eyes} / 12`;
+      }
       if ($("cage-summary")) {
+        const bits = [`Spawn ${s.x}, ${s.z}`];
+        if (s.impossible) bits.push("impossible-style cave spawn (dripstone + lava under you)");
+        if (s.stronghold) bits.push(`first portal ${s.stronghold.eyes}/12 eyes`);
         $("cage-summary").insertAdjacentHTML(
           "beforeend",
-          ` <span class="note">Spawn ${s.x}, ${s.z} · <button class="copy" data-copy="${s.tp}">Copy /tp spawn</button></span>`
+          ` <span class="note">${bits.join(" · ")}
+            ${s.tp ? ` · <button class="copy" data-copy="${s.tp}">Copy /tp spawn</button>` : ""}
+            ${s.stronghold?.tp ? ` · <button class="copy" data-copy="${s.stronghold.tp}">Copy /tp stronghold</button>` : ""}
+          </span>`
         );
       }
     })
@@ -309,6 +323,11 @@ function applyPreset(id) {
   });
   $("flt-treasure").checked = !!p.buriedTreasure;
   $("flt-stronghold").checked = !!p.stronghold;
+  if ($("flt-impossible")) $("flt-impossible").checked = !!p.impossible || id === "impossible";
+  if ($("portal-eyes")) {
+    $("portal-eyes").value = p.eyes != null ? String(p.eyes) : "-1";
+    updateEyesLabel();
+  }
   seenSeeds.clear();
   if ($("search-btn")) $("search-btn").textContent = "Find seeds";
   updateMatchCount();
@@ -344,17 +363,21 @@ function showResults(pack) {
   }
   root.innerHTML = pack.results
     .map((r) => {
-      const cage = r.cages.map((c) => `${c.x}, ${c.z}`).join(" and ");
+      const cage = (r.cages || []).map((c) => `${c.x}, ${c.z}`).join(" and ");
       const start = r.spawn ? `${r.spawn.icon} ${r.spawn.name}` : "";
+      const tps = (r.tps || [])
+        .map((t) => `<button class="copy" data-copy="${t.cmd}">Copy /tp ${t.label}</button>`)
+        .join(" ");
       return `<article class="result">
         <div class="result-head">
           <b class="mono">${r.seed}</b>
           <span>
             <button class="copy" data-copy="${r.seed}">Copy seed</button>
             <button class="copy" data-inspect="${r.seed}">See the map</button>
+            ${tps}
           </span>
         </div>
-        <div class="note">${start ? `${start} · ` : ""}Cages at ${cage}</div>
+        <div class="note">${start ? `${start} · ` : ""}${cage ? `Cages at ${cage}` : ""}</div>
         <ol>${(r.reasons || []).map((x) => `<li>${x}</li>`).join("")}</ol>
       </article>`;
     })
@@ -490,15 +513,20 @@ function startSearch() {
   const cubi = (filters.structures || []).map((s) => CUBI_STRUCT[s.id]).filter(Boolean);
   const maxResults = Math.max(1, Math.min(20, Number($("max-results")?.value) || 6));
   const typed = String($("start-seed")?.value || "").trim();
+  const wantImp = !!$("flt-impossible")?.checked;
+  const wantEyes = portalEyesWanted();
   if ($("results")) $("results").innerHTML = "<p class='note'>Looking for new worlds…</p>";
   if ($("bar")) $("bar").style.width = "20%";
   if ($("search-status")) {
-    $("search-status").textContent =
-      clump >= 2
-        ? `Hunting ${clump} villages packed together…`
-        : cubi.length
-          ? "Checking real structure locations (cubiomes)…"
-          : "Looking for new worlds…";
+    $("search-status").textContent = wantImp
+      ? "Hunting cave/lava spawns (cubiomes)…"
+      : wantEyes >= 0
+        ? `Hunting first portals with ${wantEyes}/12 eyes…`
+        : clump >= 2
+          ? `Hunting ${clump} villages packed together…`
+          : cubi.length
+            ? "Checking real structure locations (cubiomes)…"
+            : "Looking for new worlds…";
   }
   if ($("search-btn")) $("search-btn").disabled = true;
   searching = true;
@@ -507,7 +535,43 @@ function startSearch() {
     try {
       let pack = { results: [] };
 
-      if (clump >= 2) {
+      if (wantImp || wantEyes >= 0) {
+        const maxn =
+          wantEyes >= 6 ? 25000 : wantEyes >= 5 ? 18000 : wantEyes >= 4 ? 12000 : wantImp ? 4000 : 8000;
+        const data = await huntSpecial({
+          count: maxResults,
+          max: maxn,
+          impossible: wantImp,
+          eyes: wantEyes,
+        });
+        for (const h of data.hits || []) {
+          const ev = evaluateWorld(parseSeed(h.seed), { pillars: filters.pillars, slime: filters.slime }) || {
+            seed: String(h.seed),
+            cages: [],
+            reasons: [],
+          };
+          ev.seed = String(h.seed);
+          ev.reasons = ev.reasons || [];
+          if (h.impossible) {
+            ev.reasons.unshift(
+              `Impossible-style spawn in ${String(h.biome || "dripstone caves").replaceAll("_", " ")} at ${h.x}, ${h.y}, ${h.z} — cave on ${h.caveNeighbors}/4 sides, lava-prone dripstone under you`
+            );
+          }
+          if (h.stronghold) {
+            ev.reasons.push(
+              `First stronghold ${h.stronghold.x}, ${h.stronghold.z} · ${h.stronghold.eyes}/12 eyes already in the portal`
+            );
+          }
+          ev.tps = [
+            h.tp ? { label: "spawn", cmd: h.tp } : null,
+            h.stronghold?.tp ? { label: "stronghold", cmd: h.stronghold.tp } : null,
+          ].filter(Boolean);
+          pack.results.push(ev);
+        }
+        if (filters.pillars) {
+          pack.results = pack.results.filter((r) => evaluateWorld(parseSeed(r.seed), { pillars: filters.pillars }));
+        }
+      } else if (clump >= 2) {
         const data = await searchVillageCluster(clump, maxResults);
         for (const h of data.hits || []) {
           const ev = evaluateWorld(parseSeed(h.seed), { pillars: filters.pillars, slime: filters.slime }) || {
@@ -732,6 +796,8 @@ function init() {
   });
   $("village-cluster")?.addEventListener("input", updateClusterLabel);
   updateClusterLabel();
+  $("portal-eyes")?.addEventListener("input", updateEyesLabel);
+  updateEyesLabel();
   $("search-btn")?.addEventListener("click", startSearch);
   $("stop-btn")?.addEventListener("click", startSearch);
   $("slot-editor")?.addEventListener("change", updateMatchCount);

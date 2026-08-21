@@ -46,6 +46,109 @@ static int village_ok_biome(int id) {
     }
 }
 
+static int is_cave_id(int id) {
+    return id == dripstone_caves || id == lush_caves;
+}
+
+/* Java WorldgenRandom.setDecorationSeed(worldSeed, blockX, blockZ), then 12
+ * portal frames: each nextFloat() > 0.9f has an eye (vanilla PortalRoom). */
+static int portal_eye_count(uint64_t worldSeed, int x, int z) {
+    uint64_t rnd;
+    setSeed(&rnd, worldSeed);
+    uint64_t a = nextLong(&rnd) | 1ULL;
+    uint64_t b = nextLong(&rnd) | 1ULL;
+    uint64_t k = (uint64_t)(int64_t)x * a + (uint64_t)(int64_t)z * b ^ worldSeed;
+    setSeed(&rnd, k);
+    int e = 0;
+    int i;
+    for (i = 0; i < 12; i++) {
+        if (nextFloat(&rnd) > 0.9f)
+            e++;
+    }
+    return e;
+}
+
+static Pos first_stronghold(Generator *g, uint64_t seed, int mc) {
+    StrongholdIter sh;
+    initFirstStronghold(&sh, mc, seed);
+    nextStronghold(&sh, g);
+    return sh.pos;
+}
+
+typedef struct {
+    int x, y, z;
+    int biome_id;
+    int cave_neighbors;
+    int impossible;
+    char biome[48];
+} SpawnInfo;
+
+/* Spawn is "impossible-style" when cubiomes world-spawn sits in a dripstone
+ * (or lush) cave at player height, the four sides are also cave, and dripstone
+ * continues down where lava aquifers generate. Calculated, not a seed list. */
+static SpawnInfo analyze_spawn(Generator *g, int mc) {
+    SpawnInfo s;
+    memset(&s, 0, sizeof(s));
+    Pos p = getSpawn(g);
+    s.x = p.x;
+    s.z = p.z;
+    s.y = 80;
+    int c80 = getBiomeAt(g, 1, p.x, 80, p.z);
+    int c64 = getBiomeAt(g, 1, p.x, 64, p.z);
+    int c8 = getBiomeAt(g, 1, p.x, 8, p.z);
+    int c0 = getBiomeAt(g, 1, p.x, 0, p.z);
+    int dirs[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    int n80 = 0, n8 = 0, i;
+    for (i = 0; i < 4; i++) {
+        int a = getBiomeAt(g, 1, p.x + dirs[i][0], 80, p.z + dirs[i][1]);
+        int b = getBiomeAt(g, 1, p.x + dirs[i][0], 8, p.z + dirs[i][1]);
+        if (is_cave_id(a))
+            n80++;
+        if (b == dripstone_caves)
+            n8++;
+    }
+    s.cave_neighbors = n80;
+    int lava_below = (c8 == dripstone_caves) || (c0 == dripstone_caves);
+    s.impossible = is_cave_id(c80) && is_cave_id(c64) && lava_below && n80 >= 3 && n8 >= 2;
+    if (s.impossible)
+        s.y = 72;
+    if (s.impossible) {
+        s.biome_id = c80;
+    } else {
+        static const int ys[] = {96, 80, 120, 160, 256, 72, 64};
+        s.biome_id = none;
+        for (i = 0; i < 7; i++) {
+            int id = getBiomeAt(g, 1, p.x, ys[i], p.z);
+            if (id != none && id != lush_caves && id != dripstone_caves && id != deep_dark) {
+                s.biome_id = id;
+                break;
+            }
+        }
+        if (s.biome_id == none)
+            s.biome_id = c80;
+    }
+    {
+        const char *nm = biome2str(mc, s.biome_id);
+        snprintf(s.biome, sizeof(s.biome), "%s", nm ? nm : "unknown");
+    }
+    return s;
+}
+
+static uint64_t scramble_seed(void) {
+    uint64_t seed = ((uint64_t)time(NULL) << 20) ^ (uint64_t)clock() ^ 0x9e3779b97f4a7c15ULL;
+    seed = seed * 6364136223846793005ULL + 1442695040888963407ULL;
+    if (((seed >> 48) & 0xffffULL) == 0)
+        seed |= 0xA5A5ULL << 48;
+    return seed;
+}
+
+static uint64_t next_big_seed(uint64_t seed) {
+    seed = seed * 6364136223846793005ULL + 1442695040888963407ULL;
+    if (((seed >> 48) & 0xffffULL) == 0)
+        seed |= 0xC0DEULL << 48;
+    return seed;
+}
+
 typedef struct {
     int x, z, biome;
 } Vil;
@@ -389,21 +492,108 @@ int main(int argc, char **argv) {
     if (strcmp(argv[1], "spawn") == 0 && argc >= 3) {
         uint64_t seed = parse_seed(argv[2]);
         int mc = parse_mc(argc >= 4 ? argv[3] : "1.21");
-        Generator g;
-        setupGenerator(&g, mc, 0);
-        applySeed(&g, DIM_OVERWORLD, seed);
-        Pos p = getSpawn(&g);
-        int id = none;
-        static const int ys[] = {63, 72, 80, 96, 120, 160, 200, 256};
-        for (int i = 0; i < 8; i++) {
-            id = getBiomeAt(&g, 1, p.x, ys[i], p.z);
-            if (id != none && id != lush_caves && id != dripstone_caves && id != deep_dark)
-                break;
-        }
-        const char *name = biome2str(mc, id);
-        printf("{\"seed\":\"%" PRId64 "\",\"x\":%d,\"y\":80,\"z\":%d,\"biome\":\"%s\",\"tp\":\"/tp @s %d 80 %d\"}\n",
-               (int64_t)seed, p.x, p.z, name ? name : "unknown", p.x, p.z);
+        Generator *gp = (Generator *)calloc(1, sizeof(Generator));
+        if (!gp)
+            return 1;
+        setupGenerator(gp, mc, 0);
+        applySeed(gp, DIM_OVERWORLD, seed);
+        SpawnInfo s = analyze_spawn(gp, mc);
+        Pos sh = first_stronghold(gp, seed, mc);
+        int eyes = portal_eye_count(seed, sh.x, sh.z);
+        printf("{\"seed\":\"%" PRId64 "\",\"x\":%d,\"y\":%d,\"z\":%d,\"biome\":\"%s\","
+               "\"tp\":\"/tp @s %d %d %d\",\"impossible\":%s,\"caveNeighbors\":%d,"
+               "\"stronghold\":{\"x\":%d,\"z\":%d,\"eyes\":%d,\"tp\":\"/tp @s %d 20 %d\"}}\n",
+               (int64_t)seed, s.x, s.y, s.z, s.biome, s.x, s.y, s.z,
+               s.impossible ? "true" : "false", s.cave_neighbors,
+               sh.x, sh.z, eyes, sh.x, sh.z);
+        free(gp);
         return 0;
+    }
+
+    if (strcmp(argv[1], "portal") == 0 && argc >= 3) {
+        uint64_t seed = parse_seed(argv[2]);
+        int mc = parse_mc(argc >= 4 ? argv[3] : "1.21");
+        Generator *gp = (Generator *)calloc(1, sizeof(Generator));
+        if (!gp)
+            return 1;
+        setupGenerator(gp, mc, 0);
+        applySeed(gp, DIM_OVERWORLD, seed);
+        Pos sh = first_stronghold(gp, seed, mc);
+        int eyes = portal_eye_count(seed, sh.x, sh.z);
+        printf("{\"seed\":\"%" PRId64 "\",\"x\":%d,\"y\":20,\"z\":%d,\"eyes\":%d,\"frames\":12,"
+               "\"tp\":\"/tp @s %d 20 %d\"}\n",
+               (int64_t)seed, sh.x, sh.z, eyes, sh.x, sh.z);
+        free(gp);
+        return 0;
+    }
+
+    if (strcmp(argv[1], "hunt") == 0 && argc >= 6) {
+        /* hunt <want> <maxn> <impossible 0|1> <eyes -1 or 0-12> [mc] */
+        int want = atoi(argv[2]);
+        int maxn = atoi(argv[3]);
+        int want_imp = atoi(argv[4]);
+        int want_eyes = atoi(argv[5]);
+        int mc = parse_mc(argc >= 7 ? argv[6] : "1.21");
+        if (want < 1)
+            want = 1;
+        if (want > 12)
+            want = 12;
+        if (maxn < 200)
+            maxn = 200;
+        if (maxn > 80000)
+            maxn = 80000;
+        if (want_eyes > 12)
+            want_eyes = 12;
+        Generator *gp = (Generator *)calloc(1, sizeof(Generator));
+        if (!gp)
+            return 1;
+        setupGenerator(gp, mc, 0);
+        uint64_t seed = scramble_seed();
+        int found = 0, checked = 0;
+        printf("{\"hits\":[");
+        int n;
+        for (n = 0; n < maxn && found < want; n++) {
+            seed = next_big_seed(seed);
+            applySeed(gp, DIM_OVERWORLD, seed);
+            checked++;
+            SpawnInfo s;
+            memset(&s, 0, sizeof(s));
+            if (want_imp) {
+                s = analyze_spawn(gp, mc);
+                if (!s.impossible)
+                    continue;
+            } else {
+                s.y = 80;
+                snprintf(s.biome, sizeof(s.biome), "%s", "unknown");
+            }
+            Pos sh = first_stronghold(gp, seed, mc);
+            int eyes = portal_eye_count(seed, sh.x, sh.z);
+            if (want_eyes >= 0 && eyes != want_eyes)
+                continue;
+            if (!want_imp) {
+                Pos p = getSpawn(gp);
+                s.x = p.x;
+                s.z = p.z;
+                s.y = 80;
+                int id = getBiomeAt(gp, 1, p.x, 80, p.z);
+                if (id == lush_caves || id == dripstone_caves || id == deep_dark)
+                    id = getBiomeAt(gp, 1, p.x, 96, p.z);
+                const char *nm = biome2str(mc, id);
+                snprintf(s.biome, sizeof(s.biome), "%s", nm ? nm : "unknown");
+            }
+            if (found)
+                printf(",");
+            printf("{\"seed\":\"%" PRId64 "\",\"x\":%d,\"y\":%d,\"z\":%d,\"biome\":\"%s\","
+                   "\"impossible\":%s,\"caveNeighbors\":%d,\"tp\":\"/tp @s %d %d %d\","
+                   "\"stronghold\":{\"x\":%d,\"z\":%d,\"eyes\":%d,\"tp\":\"/tp @s %d 20 %d\"}}",
+                   (int64_t)seed, s.x, s.y, s.z, s.biome,
+                   s.impossible ? "true" : "false", s.cave_neighbors,
+                   s.x, s.y, s.z, sh.x, sh.z, eyes, sh.x, sh.z);
+            found++;
+        }
+        printf("],\"checked\":%d,\"found\":%d}\n", checked, found);
+        free(gp);
+        return found ? 0 : 1;
     }
 
     if (strcmp(argv[1], "find_struct") == 0 && argc >= 6) {

@@ -47,7 +47,8 @@
           <div class="stat"><span>This seed</span><b id="meta-seed" class="mono">—</b></div>
           <div class="stat"><span>You'll probably start in</span><b id="meta-spawn">—</b></div>
           <div class="stat"><span>Caged crystals</span><b id="meta-cages">—</b></div>
-          <div class="stat"><span>Stronghold (about)</span><b id="meta-sh" class="mono">—</b></div>
+          <div class="stat"><span>First stronghold</span><b id="meta-sh" class="mono">—</b></div>
+          <div class="stat"><span>Portal eyes in</span><b id="meta-eyes">—</b></div>
         </div>
         <div class="hidden">
           <b id="meta-pillar"></b>
@@ -147,6 +148,15 @@
               <label class="check"><input data-struct="end_city" data-radius="1600" type="checkbox" /> An End city</label>
               <label class="check"><input id="flt-treasure" type="checkbox" /> Buried treasure</label>
               <label class="check"><input id="flt-stronghold" type="checkbox" /> A closer stronghold</label>
+              <label class="check"><input id="flt-impossible" type="checkbox" /> Impossible spawn (cave + lava)</label>
+            </div>
+
+            <div class="cluster-box" id="portal-eyes-box">
+              <label class="field">
+                <span>Eyes already in the End portal: <b id="eyes-label">any number</b></span>
+                <input id="portal-eyes" type="range" min="-1" max="8" step="1" value="-1" />
+              </label>
+              <p class="note" id="eyes-hint">Leave on “any” unless you care. Each of the 12 frames has a 10% chance to already hold an eye. 0–3 is common. 5+ takes longer. 9–12 is basically never found by brute force.</p>
             </div>
 
             <div class="cluster-box" id="village-cluster-box">
@@ -215,6 +225,6 @@
         End towers are exact. Biome search is real Java 1.21 via cubiomes. Paste the seed on the create-world screen.
       </footer>
     </div>
-    <script type="module" src="./js/app.js?v=11"></script>
+    <script type="module" src="./js/app.js?v=12"></script>
   </body>
 </html>

@@ -417,6 +417,42 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._json(500, {"error": str(exc)})
 
+        if path == "/api/hunt":
+            count = int(body.get("count") or 4)
+            maxn = int(body.get("max") or 8000)
+            impossible = 1 if body.get("impossible") else 0
+            eyes = body.get("eyes")
+            try:
+                eyes_i = int(eyes)
+            except (TypeError, ValueError):
+                eyes_i = -1
+            if eyes_i is None:
+                eyes_i = -1
+            mc = str(body.get("mc") or "1.21")
+            args = [TOOL, "hunt", str(count), str(maxn), str(impossible), str(eyes_i), mc]
+            try:
+                out = subprocess.check_output(args, cwd=ROOT, timeout=120, stderr=subprocess.STDOUT)
+                return self._json(200, json.loads(out.decode()))
+            except subprocess.CalledProcessError as exc:
+                text = exc.output.decode(errors="replace")
+                try:
+                    return self._json(200, json.loads(text))
+                except Exception:
+                    return self._json(500, {"error": text or str(exc)})
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
+        if path == "/api/portal":
+            seed = str(body.get("seed", "0"))
+            mc = str(body.get("mc") or "1.21")
+            try:
+                out = subprocess.check_output(
+                    [TOOL, "portal", seed, mc], cwd=ROOT, timeout=40, stderr=subprocess.STDOUT
+                )
+                return self._json(200, json.loads(out.decode()))
+            except Exception as exc:
+                return self._json(500, {"error": str(exc)})
+
         if path == "/api/villages/filter":
             seeds = [str(s) for s in (body.get("seeds") or [])][:80]
             radius = int(body.get("radius") or 500)
