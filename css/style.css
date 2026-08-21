@@ -252,6 +252,17 @@ tr.caged td { color: var(--gold); }
   margin-top: 8px;
 }
 .cluster-box b { color: var(--gold); font-weight: 650; }
+#eyes-value, #cluster-label {
+  min-width: 3ch;
+  display: inline-block;
+}
+#eyes-value {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #221433;
+  color: var(--gold);
+}
 
 .progress {
   height: 8px; background: #0c0714; border-radius: 99px; overflow: hidden; border: 1px solid var(--line);

@@ -153,10 +153,10 @@
 
             <div class="cluster-box" id="portal-eyes-box">
               <label class="field">
-                <span>Eyes already in the End portal: <b id="eyes-label">any number</b></span>
-                <input id="portal-eyes" type="range" min="-1" max="8" step="1" value="-1" />
+                <span>Eyes already in the End portal: <b id="eyes-label">any number</b> <span class="mono" id="eyes-value">any</span></span>
+                <input id="portal-eyes" type="range" min="0" max="9" step="1" value="0" />
               </label>
-              <p class="note" id="eyes-hint">Leave on “any” unless you care. Each of the 12 frames has a 10% chance to already hold an eye. 0–3 is common. 5+ takes longer. 9–12 is basically never found by brute force.</p>
+              <p class="note" id="eyes-hint">All the way left is “any”. Slide right for 0, then 1, 2, … up to 8 eyes already in the first portal.</p>
             </div>
 
             <div class="cluster-box" id="village-cluster-box">
@@ -225,6 +225,6 @@
         End towers are exact. Biome search is real Java 1.21 via cubiomes. Paste the seed on the create-world screen.
       </footer>
     </div>
-    <script type="module" src="./js/app.js?v=12"></script>
+    <script type="module" src="./js/app.js?v=13"></script>
   </body>
 </html>

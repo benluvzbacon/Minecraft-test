@@ -325,7 +325,7 @@ function applyPreset(id) {
   $("flt-stronghold").checked = !!p.stronghold;
   if ($("flt-impossible")) $("flt-impossible").checked = !!p.impossible || id === "impossible";
   if ($("portal-eyes")) {
-    $("portal-eyes").value = p.eyes != null ? String(p.eyes) : "-1";
+    $("portal-eyes").value = p.eyes != null ? String(Number(p.eyes) + 1) : "0";
     updateEyesLabel();
   }
   seenSeeds.clear();
@@ -406,6 +406,48 @@ const CLUSTER_WORDS = {
 function clusterCount() {
   const n = Number($("village-cluster")?.value || 1);
   return Math.max(1, Math.min(4, n));
+}
+
+/** Slider 0 = any; 1–9 = 0–8 eyes already in the portal. */
+function portalEyesWanted() {
+  const raw = Number($("portal-eyes")?.value ?? 0);
+  if (!Number.isFinite(raw) || raw <= 0) return -1;
+  return Math.max(0, Math.min(8, raw - 1));
+}
+
+function updateEyesLabel() {
+  const n = portalEyesWanted();
+  const words =
+    n < 0 ? "any number" : n === 0 ? "0 of 12 (empty)" : `${n} of 12 already filled`;
+  if ($("eyes-label")) $("eyes-label").textContent = words;
+  if ($("eyes-value")) $("eyes-value").textContent = n < 0 ? "any" : String(n);
+  if ($("eyes-hint")) {
+    $("eyes-hint").textContent =
+      n < 0
+        ? "Leave on “any” unless you care. Each of the 12 frames has a 10% chance to already hold an eye."
+        : n <= 2
+          ? "Common. The finder rolls Java Random the same way portal frames do, on the first stronghold."
+          : n <= 4
+            ? "Uncommon. Search may take a few extra seconds."
+            : "Rare. 5 is about 1 in 264 portals. 6+ can take a while and might find none this pass.";
+  }
+}
+
+async function huntSpecial(opts) {
+  const res = await fetch("/api/hunt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      count: opts.count,
+      max: opts.max,
+      impossible: !!opts.impossible,
+      eyes: opts.eyes,
+      mc: "1.21",
+    }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
 }
 
 function clusterMaxDist(n) {
@@ -795,11 +837,23 @@ function init() {
     b.addEventListener("click", () => switchTab(b.dataset.tab));
   });
   $("village-cluster")?.addEventListener("input", updateClusterLabel);
+  $("village-cluster")?.addEventListener("change", updateClusterLabel);
   updateClusterLabel();
-  $("portal-eyes")?.addEventListener("input", updateEyesLabel);
+  const eyesEl = $("portal-eyes");
+  if (eyesEl) {
+    eyesEl.addEventListener("input", updateEyesLabel);
+    eyesEl.addEventListener("change", updateEyesLabel);
+    eyesEl.addEventListener("pointerup", updateEyesLabel);
+  }
   updateEyesLabel();
-  $("search-btn")?.addEventListener("click", startSearch);
-  $("stop-btn")?.addEventListener("click", startSearch);
+  $("search-btn")?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    startSearch();
+  });
+  $("stop-btn")?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    startSearch();
+  });
   $("slot-editor")?.addEventListener("change", updateMatchCount);
   document.querySelectorAll("#find-toggles input").forEach((el) => el.addEventListener("change", updateMatchCount));
 
