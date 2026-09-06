@@ -37,6 +37,13 @@ jobs:
       - name: Audit the remapped production jar
         if: steps.build.outcome == 'success'
         run: python3 scripts/verify_jar.py
+      - name: Upload compiled Riftborn jar
+        if: success()
+        uses: actions/upload-artifact@v6
+        with:
+          name: riftborn-1.21.1
+          path: build/libs/riftborn-1.0.0.jar
+          if-no-files-found: error
       - name: Run dedicated-server GameTests
         id: gametest
         run: |
@@ -87,12 +94,12 @@ jobs:
               status: 'completed', conclusion: outcomes.every(value => value === 'success') ? 'success' : 'failure',
               output: {title: 'Java 21 / Minecraft 1.21.1 / Fabric', summary: 'Build / GameTests / multiplayer smoke: ' + outcomes.join(' / '), text: '```text\n' + log.slice(-55000) + '\n```'}
             });
-      - uses: actions/upload-artifact@v6
+      - name: Upload test diagnostics
+        uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: riftborn-1.21.1
+          name: riftborn-1.21.1-diagnostics
           path: |
-            build/libs/*.jar
             build/libs/SHA256SUMS
             build/jar-verification.json
             build/reports/

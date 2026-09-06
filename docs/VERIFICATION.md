@@ -39,7 +39,7 @@ f46bd08b8560c0bb8af1ec4d7f2722f589dd8e281830bbe6eb2d807886ba8a2e
 
 The audit verifies intermediary remapping, entrypoint classes, JSON decoding, archive integrity, inclusion of every main resource, and exclusion of both development test mods. The retrieved jar was independently rechecked with `python3 scripts/verify_jar.py`.
 
-A normal source build writes the installation jar to **`build/libs/riftborn-1.0.0.jar`**. CI supplies the jar and `SHA256SUMS` in the **`riftborn-1.21.1`** Actions artifact. Install the regular jar, not `-sources.jar`, alongside Fabric API on both the client and the server.
+A normal source build writes the installation jar to **`build/libs/riftborn-1.0.0.jar`**. The current workflow supplies only the compiled jar at the root of the **`riftborn-1.21.1`** Actions artifact ZIP; `SHA256SUMS` and test reports are in **`riftborn-1.21.1-diagnostics`**. Install the regular jar, not `-sources.jar`, alongside Fabric API on both the client and the server.
 
 ## Scope
 

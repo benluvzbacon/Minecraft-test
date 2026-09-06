@@ -32,7 +32,9 @@ Back up existing worlds first. Ore and Overworld ruins appear in **newly generat
 
 ### Getting the jar
 
-Build it yourself as described below, or download the **`riftborn-1.21.1`** artifact from a successful run in this repository's **Actions → Build and verify Riftborn** workflow. Extract **`build/libs/riftborn-1.0.0.jar`** from the artifact. The `-sources.jar` is for developers, not installation.
+Download **`riftborn-1.21.1`** from **Actions → Build and verify Riftborn → a successful run → Artifacts**. GitHub packages the artifact as a ZIP containing just **`riftborn-1.0.0.jar`** at its root. Extract that jar and put it in `mods`; no build command is needed. The artifact name identifies Minecraft 1.21.1; the jar name identifies Riftborn version 1.0.0.
+
+The separate **`riftborn-1.21.1-diagnostics`** artifact contains test reports, logs, checksums, and screenshots—not the installation jar. To build locally with `gradlew.bat`, use the full repository checkout as described below, not the compiled-jar artifact.
 
 ## Survival progression
 
@@ -96,7 +98,7 @@ git checkout arena/01a07434-minecraft-test
 ./gradlew build
 ```
 
-Windows: use `gradlew.bat build`. A system Gradle installation is **not** required. The wrapper is included and verifies the Gradle distribution checksum. The first build requires internet access to download Gradle, Minecraft, and Fabric dependencies.
+Windows PowerShell: from the full repository's root, run `.\gradlew.bat build`. A system Gradle installation is **not** required. The wrapper is included and verifies the Gradle distribution checksum. The first build requires internet access to download Gradle, Minecraft, and Fabric dependencies.
 
 Outputs:
 
