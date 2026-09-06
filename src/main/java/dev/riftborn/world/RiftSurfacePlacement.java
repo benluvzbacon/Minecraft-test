@@ -36,14 +36,17 @@ public final class RiftSurfacePlacement {
                 if (supports * 5 < samples * 3 || high - low > 12) continue;
                 int count = 0, supported = 0;
                 low = Integer.MAX_VALUE; high = Integer.MIN_VALUE;
-                for (int x = box.getMinX(); x <= box.getMaxX(); x++) for (int z = box.getMinZ(); z <= box.getMaxZ(); z++) {
+                // The unchanged Rift density interpolates on an 8-block horizontal grid.
+                // A half-cell grid spans the complete foundation without rebuilding the
+                // expensive noise-column sampler for every individual block.
+                for (int x = box.getMinX(); x <= box.getMaxX(); x += 4) for (int z = box.getMinZ(); z <= box.getMaxZ(); z += 4) {
                     if (!inFootprint(box, x, z, circular)) continue;
                     count++;
                     int y = height.applyAsInt(x + dx, z + dz);
                     if (y >= minSurface && y <= maxSurface) { supported++; low = Math.min(low, y); high = Math.max(high, y); }
                     else if (y > maxSurface) { high = y; }
                 }
-                // Highest terrain in the footprint sets the foundation, never the bottom of a void column.
+                // Highest sampled terrain across the footprint sets the foundation, never the bottom of a void column.
                 // Beard-thin terrain adaptation blends the modest remaining height variation underneath.
                 if (supported * 5 >= count * 3 && high <= maxSurface && high - low <= 12 && high - center <= 10)
                     return Optional.of(new Site(dx, high - 1, dz));

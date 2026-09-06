@@ -32,6 +32,12 @@ class RiftSurfacePlacementTest {
         }, 32, 240, 0, true).orElseThrow();
         assertEquals(71, site.floorY());
     }
+    @Test void aFlatLargeShrineDoesNotResampleEveryTerrainColumn() {
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        var box = new BlockBox(0, 127, 0, 32, 140, 32);
+        assertTrue(RiftSurfacePlacement.find(box, (x,z) -> { calls.incrementAndGet(); return 72; }, 32, 240, 64, true).isPresent());
+        assertTrue(calls.get() < 100, "Avoid a per-block height-query explosion: " + calls);
+    }
     @Test void aSingleNeedleInVoidIsNotAnIslandFoundation() {
         assertTrue(RiftSurfacePlacement.find(FOOTPRINT, (x,z) -> x == 8 && z == 8 ? 72 : 0, 32, 240, 48).isEmpty());
     }

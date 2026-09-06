@@ -84,7 +84,7 @@ F C F        F H F        F C F        F C F
 
 ### Rift-only structure placement fix
 
-Rift ruins and Guardian shrines now validate island terrain across their footprint and look for a nearby suitable island when the initial position is over void. The foundation follows the highest terrain in that footprint, rather than treating a zero-height void column as ground. Vanilla jigsaw pieces, structure templates, loot, mobs, anchors, altars, random rotations, placement spacing, separation, and salts are retained.
+Rift ruins and Guardian shrines now validate island terrain across their footprint and look for a nearby suitable island when the initial position is over void. The foundation follows the highest sampled terrain across that footprint, rather than treating a zero-height void column as ground. Vanilla jigsaw pieces, structure templates, loot, mobs, anchors, altars, random rotations, placement spacing, separation, and salts are retained.
 
 The old Rift configuration's dimension padding did not validate the root piece: a normal-server reproduction placed roots at **Y = −1** when the sampled surface was **0**. The new `riftborn:rift_surface` placement type is used **only by the two Rift structures**. **Overworld structure generation is unchanged**, as are the dimension's island-noise generator and the Riftblade implementation.
 
