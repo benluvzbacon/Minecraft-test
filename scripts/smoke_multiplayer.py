@@ -32,7 +32,7 @@ def main():
         "enable-status=false", "enforce-secure-profile=false", "motd=Riftborn isolated CI test", ""]))
     client_dir = ROOT / "run/smoke-client"
     client_dir.mkdir(parents=True, exist_ok=True)
-    (client_dir / "options.txt").write_text("onboardAccessibility:false\nskipMultiplayerWarning:true\npauseOnLostFocus:false\nnarrator:0\nrenderDistance:5\nmaxFps:60\n")
+    (client_dir / "options.txt").write_text("onboardAccessibility:false\nskipMultiplayerWarning:true\ntutorialStep:none\npauseOnLostFocus:false\nnarrator:0\nrenderDistance:5\nmaxFps:60\n")
     messages = queue.Queue()
     processes = {}
     logs = {}
@@ -80,6 +80,11 @@ def main():
     server_ready = False
     expected_stop = False
     located = set()
+    markers = set()
+    required_markers = {
+        "RIFTBORN_TRAVEL_ENTRY_OK", "RIFTBORN_MULTIPLAYER_BLINK_OK", "RIFTBORN_FLOATING_TERRAIN_OK",
+        "RIFTBORN_SCENE_RENDER_OK", "RIFTBORN_TRAVEL_RETURN_OK", "RIFTBORN_MULTIPLAYER_SMOKE_OK",
+    }
     deadline = time.monotonic() + 600
     try:
         start("server", "runSmokeServer")
@@ -96,12 +101,16 @@ def main():
                 elif name == "server" and expected_stop and code == 0:
                     if located != {"guardian_shrine", "overworld_ruin"}:
                         raise RuntimeError("Both natural structure locates must succeed: " + repr(located))
+                    if not required_markers.issubset(markers):
+                        raise RuntimeError("Missing client milestones: " + repr(required_markers - markers))
                     print("RIFTBORN_DEDICATED_SERVER_AND_CLIENT_OK", flush=True)
                     return 0
                 else:
                     raise RuntimeError(f"{name} exited unexpectedly (exit {code}, client success {success})")
                 continue
             print(f"[{name}] {line}", flush=True)
+            if name == "client":
+                markers.update(marker for marker in required_markers if marker in line)
             if name == "server" and "The nearest riftborn:" in line:
                 for structure in ("guardian_shrine", "overworld_ruin"):
                     if "riftborn:" + structure in line: located.add(structure)

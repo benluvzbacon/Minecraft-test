@@ -292,7 +292,7 @@ public final class RiftbornGameTests implements FabricGameTest {
         context.assertTrue(new ItemStack(Items.IRON_PICKAXE).isSuitableFor(stone), "Iron pickaxe must harvest Rift Stone");
         context.assertFalse(new ItemStack(Items.STONE_PICKAXE).isSuitableFor(stone), "Stone pickaxe must not harvest Rift Stone");
         context.assertFalse(new ItemStack(Items.IRON_AXE).isSuitableFor(stone), "An axe is not a suitable mining tool");
-        var oreKey = RegistryKey.of(RegistryKeys.PLACED_FEATURE, Riftborn.id("rift_stone_ore"));
+        var oreKey = RiftWorldgen.RIFT_STONE_ORE;
         var generation = context.getWorld().getBiome(context.getAbsolutePos(BlockPos.ORIGIN)).value().getGenerationSettings();
         context.assertTrue(generation.getFeatures().stream().flatMap(features -> features.stream())
                 .anyMatch(feature -> feature.matchesKey(oreKey)), "Overworld biome generation must include Rift Stone ore");
