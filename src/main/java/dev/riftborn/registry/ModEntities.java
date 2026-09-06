@@ -25,7 +25,7 @@ public final class ModEntities {
     public static final EntityType<RiftWispEntity> RIFT_WISP = register("rift_wisp",
             EntityType.Builder.create(RiftWispEntity::new, SpawnGroup.MONSTER).dimensions(0.8f, 0.8f).maxTrackingRange(10));
     public static final EntityType<RiftGuardianEntity> RIFT_GUARDIAN = register("rift_guardian",
-            EntityType.Builder.create(RiftGuardianEntity::new, SpawnGroup.MONSTER).dimensions(1.5f, 3.6f).maxTrackingRange(12).fireImmune());
+            EntityType.Builder.create(RiftGuardianEntity::new, SpawnGroup.MONSTER).dimensions(1.5f, 3.6f).maxTrackingRange(12).makeFireImmune());
     public static final EntityType<RiftBoltEntity> RIFT_BOLT = register("rift_bolt",
             EntityType.Builder.<RiftBoltEntity>create(RiftBoltEntity::new, SpawnGroup.MISC)
                     .dimensions(0.25f, 0.25f).maxTrackingRange(8).trackingTickInterval(1));

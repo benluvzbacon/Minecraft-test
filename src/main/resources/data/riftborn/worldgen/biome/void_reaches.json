@@ -1,0 +1,79 @@
+{
+  "has_precipitation": false,
+  "temperature": 0.5,
+  "downfall": 0,
+  "effects": {
+    "fog_color": 2101300,
+    "sky_color": 1903158,
+    "water_color": 7684784,
+    "water_fog_color": 2691388,
+    "foliage_color": 9921213,
+    "grass_color": 6898315,
+    "particle": {
+      "options": {
+        "type": "riftborn:rift_mote"
+      },
+      "probability": 0.007
+    },
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2
+    },
+    "music": {
+      "sound": "minecraft:music.end",
+      "min_delay": 12000,
+      "max_delay": 24000,
+      "replace_current_music": false
+    }
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "riftborn:rift_stalker",
+        "weight": 55,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "riftborn:void_brute",
+        "weight": 12,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "riftborn:rift_wisp",
+        "weight": 30,
+        "minCount": 1,
+        "maxCount": 2
+      }
+    ],
+    "creature": [],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {},
+  "features": [
+    [],
+    [],
+    [
+      "riftborn:rift_spires"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "riftborn:void_bloom_patch"
+    ],
+    []
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "type": "riftborn:the_rift",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "riftborn:the_rift",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "riftborn:void_reaches"
+    }
+  }
+}

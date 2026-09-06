@@ -159,7 +159,7 @@ public final class RiftGuardianEntity extends AbstractRiftHostileEntity {
     private void releasePulse(ServerWorld world) {
         bossBar.setName(getDisplayName());
         RiftEffects.burst(world, getPos().add(0, 0.3, 0), 75, 2);
-        playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.9f, 0.6f);
+        playSound(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), 0.9f, 0.6f);
         for (PlayerEntity player : world.getEntitiesByClass(PlayerEntity.class, getBoundingBox().expand(5.5, 1, 5.5),
                 player -> !player.isCreative() && !player.isSpectator() && player.isOnGround())) {
             Vec3d delta = player.getPos().subtract(getPos());

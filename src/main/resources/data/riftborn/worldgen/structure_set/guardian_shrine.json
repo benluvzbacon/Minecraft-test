@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:guardian_shrine",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 4197269,
+    "spacing": 28,
+    "separation": 10,
+    "spread_type": "linear"
+  }
+}

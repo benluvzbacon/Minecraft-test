@@ -1,0 +1,25 @@
+{
+  "feature": "riftborn:void_bloom",
+  "placement": [
+    {
+      "type": "minecraft:block_predicate_filter",
+      "predicate": {
+        "type": "minecraft:all_of",
+        "predicates": [
+          {
+            "type": "minecraft:matching_blocks",
+            "blocks": [
+              "minecraft:air"
+            ]
+          },
+          {
+            "type": "minecraft:would_survive",
+            "state": {
+              "Name": "riftborn:void_bloom"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

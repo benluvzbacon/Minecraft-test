@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "riftborn:rift_dust"
+    },
+    {
+      "item": "riftborn:rift_dust"
+    },
+    {
+      "item": "riftborn:rift_dust"
+    },
+    {
+      "item": "riftborn:rift_dust"
+    }
+  ],
+  "result": {
+    "id": "riftborn:rift_shard",
+    "count": 1
+  }
+}

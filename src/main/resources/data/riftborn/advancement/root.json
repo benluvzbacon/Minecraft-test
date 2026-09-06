@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "riftborn:rift_stone"
+    },
+    "title": {
+      "translate": "advancement.riftborn.root.title"
+    },
+    "description": {
+      "translate": "advancement.riftborn.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "minecraft:textures/block/obsidian.png"
+  },
+  "criteria": {
+    "progress": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "riftborn:rift_stone"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "progress"
+    ]
+  ]
+}

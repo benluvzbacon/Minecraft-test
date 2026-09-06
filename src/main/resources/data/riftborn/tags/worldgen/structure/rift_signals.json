@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "riftborn:overworld_ruin",
+    "riftborn:rift_ruin",
+    "riftborn:guardian_shrine"
+  ]
+}

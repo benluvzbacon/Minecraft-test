@@ -6,6 +6,7 @@ import dev.riftborn.effect.SafeTeleport;
 import dev.riftborn.registry.ModBlocks;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -65,9 +66,9 @@ public final class RiftTravel {
             }
         }
         Vec3d oldPos = player.getPos();
-        ServerPlayerEntity moved = player.teleportTo(new TeleportTarget(destination, landing.get(), Vec3d.ZERO,
+        Entity result = player.teleportTo(new TeleportTarget(destination, landing.get(), Vec3d.ZERO,
                 player.getYaw(), player.getPitch(), TeleportTarget.ADD_PORTAL_CHUNK_TICKET));
-        if (moved == null) return false;
+        if (!(result instanceof ServerPlayerEntity moved)) return false;
         if (!returning) state.setOrigin(player.getUuid(), GlobalPos.create(originWorld.getRegistryKey(), anchor.up()));
         moved.resetPortalCooldown();
         moved.fallDistance = 0;

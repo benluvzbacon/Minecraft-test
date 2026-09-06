@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "riftborn:rift_heart"
+    },
+    "title": {
+      "translate": "advancement.riftborn.guardian.title"
+    },
+    "description": {
+      "translate": "advancement.riftborn.guardian.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "progress": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": {
+          "type": "riftborn:rift_guardian"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "progress"
+    ]
+  ],
+  "parent": "riftborn:enter_rift"
+}

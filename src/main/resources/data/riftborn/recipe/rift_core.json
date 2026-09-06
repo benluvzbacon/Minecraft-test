@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SRS",
+    "RER",
+    "SRS"
+  ],
+  "key": {
+    "S": {
+      "item": "riftborn:rift_stone"
+    },
+    "R": {
+      "item": "riftborn:rift_shard"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    }
+  },
+  "result": {
+    "id": "riftborn:rift_core",
+    "count": 1
+  }
+}
