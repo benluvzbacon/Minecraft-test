@@ -63,6 +63,9 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
                 && client.player.getEquippedStack(EquipmentSlot.FEET).isOf(ModItems.RIFT_BOOTS);
     }
     private static void fly(MinecraftClient client) {
+        // Normal Creative-style takeoff starts with a jump. Otherwise vanilla correctly
+        // turns flying back off when an on-ground player simply sends a flying flag.
+        if (client.player.isOnGround()) client.player.jump();
         client.player.getAbilities().flying = true; client.player.sendAbilitiesUpdate();
     }
     private static void releaseKeys(MinecraftClient client) {

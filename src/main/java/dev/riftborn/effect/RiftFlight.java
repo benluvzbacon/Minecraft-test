@@ -28,6 +28,7 @@ public final class RiftFlight {
     // Entity identity rather than UUID: a respawn/new connection must not inherit a stale grant.
     // Access is confined to the server thread. Weak keys also avoid retaining disconnected players.
     private static final Map<ServerPlayerEntity, Grant> GRANTS = new WeakHashMap<>();
+    private static final Map<ServerPlayerEntity, Boolean> RESUME_ON_JOIN = new WeakHashMap<>();
 
     private static final class Grant {
         final boolean previousMayFly;
@@ -42,7 +43,7 @@ public final class RiftFlight {
 
     public static void initialize() {
         ServerTickEvents.END_SERVER_TICK.register(server -> server.getPlayerManager().getPlayerList().forEach(RiftFlight::tick));
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> refresh(handler.player, true));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> onJoin(handler.player));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             GRANTS.remove(oldPlayer);
             refresh(newPlayer, true);
@@ -51,7 +52,7 @@ public final class RiftFlight {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayerEntity player) refresh(player);
         });
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> GRANTS.clear());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> { GRANTS.clear(); RESUME_ON_JOIN.clear(); });
     }
 
     public static boolean hasFullSet(ServerPlayerEntity player) {
@@ -100,6 +101,15 @@ public final class RiftFlight {
         if (send && (changed || forceSync) && player.networkHandler != null) player.sendAbilitiesUpdate();
     }
 
+    public static void onJoin(ServerPlayerEntity player) {
+        // PlayerManager can apply the saved/default game mode after entity NBT was read.
+        // Revalidate again after that setup, then restore hovering only for a valid full set.
+        boolean resume = Boolean.TRUE.equals(RESUME_ON_JOIN.remove(player));
+        refresh(player);
+        if (resume && eligible(player) && GRANTS.containsKey(player)) player.getAbilities().flying = true;
+        refresh(player, true);
+    }
+
     public static void tick(ServerPlayerEntity player) {
         refresh(player);
         Grant grant = GRANTS.get(player);
@@ -126,14 +136,16 @@ public final class RiftFlight {
         abilities.putBoolean("mayfly", grant.previousMayFly);
         abilities.putBoolean("flying", false);
         abilities.putFloat("flySpeed", grant.previousSpeed);
-        nbt.put( "abilities", abilities);
+        nbt.put("abilities", abilities);
         nbt.putBoolean(RESUME_TAG, eligible(player) && player.getAbilities().flying);
     }
 
     /** Inventory and saved game mode have already been loaded at this point. */
     public static void readSavedState(ServerPlayerEntity player, NbtCompound nbt) {
         GRANTS.remove(player);
+        RESUME_ON_JOIN.remove(player);
         if (nbt.contains(RESUME_TAG)) {
+            RESUME_ON_JOIN.put(player, nbt.getBoolean(RESUME_TAG));
             update(player, false, false);
             if (GRANTS.containsKey(player) && nbt.getBoolean(RESUME_TAG)) player.getAbilities().flying = true;
         }

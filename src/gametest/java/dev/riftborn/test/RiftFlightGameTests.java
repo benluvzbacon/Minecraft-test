@@ -129,13 +129,15 @@ public final class RiftFlightGameTests implements FabricGameTest {
         context.assertTrue(Math.abs(saved.getCompound("abilities").getFloat("flySpeed") - 0.05f) < 0.00001, "Player data stores baseline speed");
         context.assertTrue(player.getAbilities().flying, "Saving must not interrupt current flight");
         var rejoined = player(context, GameMode.SURVIVAL); rejoined.readCustomDataFromNbt(saved);
-        RiftFlight.refresh(rejoined);
-        context.assertTrue(rejoined.getAbilities().allowFlying && rejoined.getAbilities().flying, "A valid full set resumes flight on reconnect");
+        // Simulate PlayerManager's later vanilla game-mode setup on a real reconnect.
+        rejoined.getAbilities().allowFlying = false; rejoined.getAbilities().flying = false;
+        RiftFlight.onJoin(rejoined);
+        context.assertTrue(rejoined.getAbilities().allowFlying && rejoined.getAbilities().flying, "A valid full set resumes flight after login setup");
         dispose(rejoined);
         var inventory = saved.getList("Inventory", 10);
         for (int i = inventory.size() - 1; i >= 0; i--) if (inventory.getCompound(i).getByte("Slot") == 103) inventory.remove(i);
         var withoutHelmet = player(context, GameMode.SURVIVAL); withoutHelmet.readCustomDataFromNbt(saved);
-        RiftFlight.refresh(withoutHelmet); noFlight(context, withoutHelmet);
+        RiftFlight.onJoin(withoutHelmet); noFlight(context, withoutHelmet);
         dispose(withoutHelmet); dispose(player); context.complete();
     }
     @GameTest(templateName = ARENA) public void deadPlayerCannotKeepFlight(TestContext context) {
