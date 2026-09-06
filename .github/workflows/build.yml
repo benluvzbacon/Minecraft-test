@@ -1,4 +1,4 @@
-name: Build Riftborn 2.0
+name: Build Riftborn 2.1
 
 on:
   push:
@@ -49,6 +49,6 @@ jobs:
       - name: Upload compiled Riftborn JAR
         uses: actions/upload-artifact@v6
         with:
-          name: riftborn-2.0.0
-          path: build/libs/riftborn-2.0.0.jar
+          name: riftborn-2.1.0
+          path: build/libs/riftborn-2.1.0.jar
           if-no-files-found: error

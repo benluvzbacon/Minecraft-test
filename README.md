@@ -1,4 +1,4 @@
-# Riftborn 2.0 — The Rift Awakening
+# Riftborn 2.1 — The Rift Awakening
 
 A survival adventure mod for **Minecraft Java Edition 1.21.1**, **Fabric**, and **Java 21**.
 
@@ -41,14 +41,14 @@ Riftborn is required on **both the client and the server**. It is not a Forge/Ne
 
 1. Install Java 21 and the Fabric Loader profile for Minecraft **1.21.1**.
 2. Put the matching **Fabric API** jar in the instance's `mods` directory.
-3. Put **`riftborn-2.0.0.jar`** in the same directory.
+3. Put **`riftborn-2.1.0.jar`** in the same directory.
 4. Start the Fabric instance. For a dedicated server, put both jars in that server's `mods` directory too.
 
 Back up existing worlds first. Ore and Overworld ruins appear in **newly generated chunks**. Do not remove Riftborn from a save while players or important builds are in The Rift; removing content mods can damage modded saves.
 
 ### Getting the jar
 
-Download **`riftborn-1.21.1`** from **Actions → Build and verify Riftborn → a successful run → Artifacts**. GitHub packages the artifact as a ZIP containing just **`riftborn-2.0.0.jar`** at its root. Extract that jar and put it in `mods`; no build command is needed. The artifact name identifies Minecraft 1.21.1; the jar name identifies Riftborn version 2.0.0.
+Download **`riftborn-2.1.0`** from **Actions → Build Riftborn 2.1 → a successful run → Artifacts**. GitHub packages the artifact as a ZIP containing just **`riftborn-2.1.0.jar`** at its root. Extract that jar and put it in `mods`; no build command is needed. The artifact contains Riftborn version 2.1.0 for Minecraft 1.21.1.
 
 The separate **`riftborn-1.21.1-diagnostics`** artifact contains test reports, logs, checksums, and screenshots—not the installation jar. To build locally with `gradlew.bat`, use the full repository checkout as described below, not the compiled-jar artifact.
 
@@ -165,8 +165,8 @@ Windows PowerShell: from the full repository's root, run `.\gradlew.bat build`. 
 Outputs:
 
 ```text
-build/libs/riftborn-2.0.0.jar          ← install this
-build/libs/riftborn-2.0.0-sources.jar  ← development sources
+build/libs/riftborn-2.1.0.jar          ← install this
+build/libs/riftborn-2.1.0-sources.jar  ← development sources
 ```
 
 Other useful commands:

@@ -116,4 +116,4 @@ There is at most one active event per realm. Timers are persisted, waves are cap
 
 Old worlds, item IDs, mobs, recipes, return points, Overworld structures, and the 1.5 Rift placement fix are retained. New structures and material veins require **new chunks**. No retroactive structure relocation or terrain rewrite is performed. Back up saves before upgrading, and update both the server and all clients.
 
-The existing Gradle wrapper/build remains in use. The installation output is `build/libs/riftborn-2.0.0.jar`; the `riftborn-1.21.1` Actions artifact remains a ZIP containing only that compiled jar. Diagnostics/screenshots are separate.
+The existing Gradle wrapper/build remains in use. The installation output is `build/libs/riftborn-2.1.0.jar`; the `riftborn-2.1.0` Actions artifact remains a ZIP containing only that compiled jar. Diagnostics/screenshots are separate.

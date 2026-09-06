@@ -6,13 +6,13 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-JAR = ROOT / 'build/libs/riftborn-2.0.0.jar'
+JAR = ROOT / 'build/libs/riftborn-2.1.0.jar'
 with zipfile.ZipFile(JAR) as archive:
     names = archive.namelist()
     assert len(names) == len(set(names)), 'Duplicate entries in production jar'
     assert archive.testzip() is None, 'Invalid jar CRC'
     metadata = json.loads(archive.read('fabric.mod.json'))
-    assert metadata['id'] == 'riftborn' and metadata['version'] == '2.0.0'
+    assert metadata['id'] == 'riftborn' and metadata['version'] == '2.1.0'
     assert metadata['environment'] == '*'
     for group in ('main', 'client'):
         for entrypoint in metadata['entrypoints'][group]:

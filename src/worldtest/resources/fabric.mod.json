@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "id": "riftborn_worldtest",
-  "version": "2.0.0",
-  "name": "Riftborn normal-world verification (development only)",
+  "version": "2.1.0",
+  "name": "Riftborn Smoke Server",
   "environment": "server",
   "entrypoints": {
-    "main": [
-      "dev.riftborn.test.RiftbornWorldTests"
+    "server": [
+      "dev.riftborn.test.RiftbornWorldTests",
+      "dev.riftborn.test.AwakeningWorldTests"
     ]
   },
   "depends": {
-    "riftborn": "*",
-    "fabric-api": "*"
+    "riftborn": "*"
   }
 }

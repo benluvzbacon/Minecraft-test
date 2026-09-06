@@ -96,7 +96,7 @@ Logs: `build/smoke-reports/`. Screenshots: `run/smoke-client/screenshots/riftbor
 
 ## Continuous integration
 
-`.github/workflows/build.yml` runs the build, the GameTest server, and the headless multiplayer test on Java 21. A separate GameTest check exposes full test results, and a diagnostic check exposes stage results, the jar audit, and log tails; the `riftborn-1.21.1` Actions artifact contains only the compiled `riftborn-2.0.0.jar` at the ZIP root. It is uploaded only after the existing build and jar audit succeed, and a missing jar fails the upload. Reports, logs, checksums, and screenshots are uploaded separately as `riftborn-1.21.1-diagnostics`, including after test failures. GitHub workflow-write permission is needed to update that workflow.
+`.github/workflows/build.yml` runs the build and audit on Java 21; the `riftborn-2.1.0` Actions artifact contains only the compiled `riftborn-2.1.0.jar` at the ZIP root. It is uploaded only after the existing build and jar audit succeed, and a missing jar fails the upload.
 
 ## What automated checks do not prove
 
