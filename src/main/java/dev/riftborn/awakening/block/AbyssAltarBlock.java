@@ -78,7 +78,7 @@ public final class AbyssAltarBlock extends Block {
             return ItemActionResult.CONSUME;
         boss.refreshPositionAndAngles(Vec3d.ofBottomCenter(spawn), 0, 0);
         if (!w.isSpaceEmpty(boss, boss.getBoundingBox())
-            || !w.getOtherEntities(null, boss.getBoundingBox(), Entity::isAlive).isEmpty()) {
+            || !w.getOtherEntities(null, boss.getBoundingBox(), entity -> entity instanceof LivingEntity && entity.isAlive()).isEmpty()) {
             boss.discard();
             p.sendMessage(Text.translatable("awakening.riftborn.altar_space"), true);
             return ItemActionResult.CONSUME;

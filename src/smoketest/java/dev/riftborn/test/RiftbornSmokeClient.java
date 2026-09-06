@@ -111,7 +111,9 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
                 }
             }
             case 2 -> {
-                if (inRift && client.player.getMainHandStack().isOf(ModItems.RIFTBLADE)
+                if (inRift && client.currentScreen == null && client.player.isOnGround()
+                        && client.player.getVelocity().lengthSquared() < 0.02
+                        && client.player.getMainHandStack().isOf(ModItems.RIFTBLADE)
                         && client.player.squaredDistanceTo(16.5, 141, 40.5) < 1 && ticks - stageTick > 25) {
                     client.player.setYaw(-90);
                     client.player.setPitch(0);
@@ -132,7 +134,7 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
             }
             case 4 -> {
                 if (ticks - stageTick > 15) {
-                    require(client.player.getPos().squaredDistanceTo(afterBlink) < 0.1, "Cooldown must block repeated network uses");
+                    require(client.player.getPos().squaredDistanceTo(afterBlink) < 0.1, "Cooldown must block repeated network uses: before=" + afterBlink + ", after=" + client.player.getPos());
                     client.player.setYaw(160);
                     client.player.setPitch(8);
                     Riftborn.LOGGER.info("RIFTBORN_MULTIPLAYER_BLINK_OK");

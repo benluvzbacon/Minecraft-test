@@ -66,6 +66,7 @@ def main():
             "fill -6 99 -6 6 99 6 minecraft:stone", "fill -6 100 -6 6 106 6 minecraft:air",
             "setblock 0 100 0 riftborn:rift_anchor[open=false]", "setworldspawn 0 100 2",
             "execute in riftborn:the_rift run place template riftborn:guardian_shrine 0 140 0",
+            "execute in riftborn:the_rift as @e[type=!minecraft:player,x=0,y=140,z=0,dx=32,dy=14,dz=32] run data merge entity @s {NoAI:1b,Silent:1b}",
             "execute in riftborn:the_rift run fill -4 140 34 36 140 48 riftborn:rift_stone",
             'execute in riftborn:the_rift run summon riftborn:rift_stalker 10.5 141 25.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b}',
             'execute in riftborn:the_rift run summon riftborn:void_brute 23.5 141 25.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b}',

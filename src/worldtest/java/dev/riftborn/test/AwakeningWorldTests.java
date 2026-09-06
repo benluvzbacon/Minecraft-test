@@ -91,7 +91,7 @@ public final class AwakeningWorldTests {
                     break;
                 }
         require(sample != null, "Upper Abyss landmasses exist");
-        int lower = 0, upper = 0, ores = 0, voidCells = 0;
+        int lower = 0, upper = 0, ores = 0, voidCells = 0, enclosedAir = 0;
         var mutable = new BlockPos.Mutable();
         for (int cx = sample.getX() >> 4; cx < (sample.getX() >> 4) + 2; cx++)
             for (int cz = sample.getZ() >> 4; cz < (sample.getZ() >> 4) + 2; cz++) {
@@ -107,14 +107,18 @@ public final class AwakeningWorldTests {
                                     lower++;
                                 if (y > 180)
                                     upper++;
-                            } else if (y > 140 && y < 165)
-                                voidCells++;
+                            } else {
+                                if (y > 140 && y < 165) voidCells++;
+                                if (y > 90 && y < 235
+                                        && !chunk.getBlockState(mutable.set(cx * 16 + x, y + 8, cz * 16 + z)).isAir()
+                                        && !chunk.getBlockState(mutable.set(cx * 16 + x, y - 8, cz * 16 + z)).isAir()) enclosedAir++;
+                            }
                         }
             }
-        require(lower > 500 && upper > 500 && voidCells > 1000 && ores > 0,
-            "Layered Abyss terrain and natural crystal ore: " + lower + "," + upper + "," + voidCells + "," + ores);
+        require(lower > 500 && upper > 500 && voidCells > 1000 && ores > 0 && enclosedAir > 0,
+            "Layered Abyss terrain and natural crystal ore: " + lower + "," + upper + "," + voidCells + "," + ores + ", enclosed=" + enclosedAir);
         Riftborn.LOGGER.info(
-            "RIFTBORN_20_TERRAIN_OK lower={} upper={} gap_air={} ores={}", lower, upper, voidCells, ores);
+            "RIFTBORN_20_TERRAIN_OK lower={} upper={} gap_air={} ores={} enclosed_air={}", lower, upper, voidCells, ores, enclosedAir);
     }
     private static AbyssBossEntity boss(ServerPlayerEntity p) {
         return p.getServerWorld()
