@@ -1,5 +1,11 @@
 package dev.riftborn;
 
+import dev.riftborn.config.RiftbornConfig;
+import dev.riftborn.registry.ModBlocks;
+import dev.riftborn.registry.ModEntities;
+import dev.riftborn.registry.ModItems;
+import dev.riftborn.registry.ModParticles;
+import dev.riftborn.world.RiftWorldgen;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -9,12 +15,20 @@ public final class Riftborn implements ModInitializer {
     public static final String MOD_ID = "riftborn";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+    public static RiftbornConfig CONFIG;
+
     public static Identifier id(String path) {
         return Identifier.of(MOD_ID, path);
     }
 
     @Override
     public void onInitialize() {
-        LOGGER.info("Riftborn is initializing");
+        CONFIG = RiftbornConfig.load();
+        ModParticles.initialize();
+        ModBlocks.initialize();
+        ModEntities.initialize();
+        ModItems.initialize();
+        RiftWorldgen.initialize();
+        LOGGER.info("Riftborn initialized: follow the fractures.");
     }
 }
