@@ -19,12 +19,17 @@ public final class SafeTeleport {
         if (direction.lengthSquared() < 0.0001 || !Double.isFinite(range)) return Optional.empty();
         direction = direction.normalize();
         Vec3d best = null;
+        Box previous = entity.getBoundingBox();
         // A horizontal, swept AABB prevents tunnelling through even panes, fences and corners.
         for (double distance = STEP; distance <= range + 0.001; distance += STEP) {
             Vec3d offset = direction.multiply(distance);
             Vec3d pos = entity.getPos().add(offset);
             Box box = entity.getBoundingBox().offset(offset);
-            if (!areChunksLoaded(world, box) || !isClear(world, entity, box)) break;
+            // The union conservatively covers the entire segment, not just sampled
+            // endpoints. A grazing diagonal corner can lie between two clear samples.
+            Box swept = previous.union(box);
+            if (!areChunksLoaded(world, swept) || !isClear(world, entity, swept)) break;
+            previous = box;
             // Do not strand the player over the void. The path may cross gaps, the landing may not.
             if (distance >= 1.0 && hasFloor(world, entity, box)) best = pos;
         }

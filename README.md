@@ -4,6 +4,10 @@ A survival adventure mod for **Minecraft Java Edition 1.21.1**, **Fabric**, and 
 
 Mine purple-veined Rift Stone, follow the signals of ruined dimensional anchors, and cross into a dark sky full of floating islands. Hunt Rift creatures, awaken **The Rift Guardian**, and forge its Heart into a **Riftblade** that lets you blink through open space.
 
+![The Rift and Guardian shrine in Minecraft](docs/images/the-rift.png)
+
+*Actual in-game capture from the automated client/server test; the shrine is placed as a test exhibition.*
+
 ## Requirements
 
 | Component | Supported / pinned version |

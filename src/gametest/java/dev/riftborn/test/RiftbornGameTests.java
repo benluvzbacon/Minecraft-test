@@ -299,4 +299,23 @@ public final class RiftbornGameTests implements FabricGameTest {
         context.complete();
     }
 
+
+    @GameTest(templateName = ARENA) public void blinkCannotGrazeThroughDiagonalCorners(TestContext context) {
+        PlayerEntity player = player(context);
+        player.setPosition(Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(2, 2, 0))).add(0, 0, 0.43));
+        context.setBlockState(new BlockPos(6, 2, 6), Blocks.OBSIDIAN);
+        context.setBlockState(new BlockPos(6, 3, 6), Blocks.OBSIDIAN);
+        Vec3d direction = new Vec3d(1, 0, 1).normalize();
+        var beforeCorner = player.getBoundingBox().offset(direction.multiply(6.6));
+        var afterCorner = player.getBoundingBox().offset(direction.multiply(6.8));
+        context.assertTrue(SafeTeleport.isClear(context.getWorld(), player, beforeCorner)
+                && SafeTeleport.isClear(context.getWorld(), player, afterCorner), "Fixture endpoints must be individually clear");
+        context.assertFalse(SafeTeleport.isClear(context.getWorld(), player, beforeCorner.union(afterCorner)),
+                "The segment between those clear samples must intersect the corner");
+        Vec3d destination = SafeTeleport.findBlinkDestination(context.getWorld(), player, direction, 8).orElseThrow();
+        double distance = destination.distanceTo(player.getPos());
+        context.assertTrue(distance >= 6.39 && distance <= 6.61, "Blink must stop before the swept corner, not tunnel across it: " + distance);
+        context.complete();
+    }
+
 }
