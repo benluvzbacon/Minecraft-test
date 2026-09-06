@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=true": {
+      "model": "riftborn:block/resonance_lock"
+    },
+    "open=false": {
+      "model": "riftborn:block/resonance_lock"
+    }
+  }
+}

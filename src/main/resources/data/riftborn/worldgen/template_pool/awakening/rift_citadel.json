@@ -1,0 +1,15 @@
+{
+  "name": "riftborn:awakening/rift_citadel",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "riftborn:awakening/rift_citadel",
+        "processors": "minecraft:empty",
+        "projection": "rigid"
+      }
+    }
+  ]
+}

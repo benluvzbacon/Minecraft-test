@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "riftborn:abyssal_schematic"
+  },
+  "base": {
+    "item": "riftborn:rift_boots"
+  },
+  "addition": {
+    "item": "riftborn:abyssal_core"
+  },
+  "result": {
+    "id": "riftborn:abyssal_boots",
+    "count": 1
+  }
+}

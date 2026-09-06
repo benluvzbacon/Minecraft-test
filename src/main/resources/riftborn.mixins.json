@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "dev.riftborn.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ServerPlayerFlightMixin",
+    "ServerPlayFlightMixin",
+    "AwakeningDamageMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

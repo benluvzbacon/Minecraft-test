@@ -1,0 +1,11 @@
+{
+  "type": "riftborn:rift_surface",
+  "biomes": "#riftborn:has_structure/awakening/sovereign_arena",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "beard_thin",
+  "start_pool": "riftborn:awakening/sovereign_arena",
+  "size": 1,
+  "surface_search_radius": 32,
+  "circular_footprint": true
+}

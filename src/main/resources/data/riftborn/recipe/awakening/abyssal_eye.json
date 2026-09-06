@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CEC",
+    "ERE",
+    "CEC"
+  ],
+  "key": {
+    "C": {
+      "item": "riftborn:abyssal_crystal"
+    },
+    "E": {
+      "item": "riftborn:abyssal_essence"
+    },
+    "R": {
+      "item": "riftborn:rift_compass"
+    }
+  },
+  "result": {
+    "id": "riftborn:abyssal_eye",
+    "count": 1
+  }
+}

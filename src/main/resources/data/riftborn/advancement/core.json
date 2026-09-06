@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "riftborn:rift_core"
+    },
+    "title": {
+      "translate": "advancement.riftborn.core.title"
+    },
+    "description": {
+      "translate": "advancement.riftborn.core.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "progress": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "riftborn:rift_core"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "progress"
+    ]
+  ],
+  "parent": "riftborn:root"
+}

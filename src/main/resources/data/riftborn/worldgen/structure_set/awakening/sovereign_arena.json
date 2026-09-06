@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:awakening/sovereign_arena",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 5200141,
+    "spacing": 40,
+    "separation": 16,
+    "spread_type": "linear"
+  }
+}

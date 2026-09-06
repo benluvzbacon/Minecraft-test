@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "riftborn:rift_helmet",
+    "riftborn:rift_chestplate",
+    "riftborn:rift_leggings",
+    "riftborn:rift_boots",
+    "riftborn:abyssal_helmet",
+    "riftborn:abyssal_chestplate",
+    "riftborn:abyssal_leggings",
+    "riftborn:abyssal_boots"
+  ]
+}

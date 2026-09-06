@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "riftborn:rift_stone",
+    "riftborn:rift_anchor",
+    "riftborn:guardian_altar",
+    "riftborn:abyssal_stone",
+    "riftborn:luminous_shale",
+    "riftborn:abyssal_crystal_ore",
+    "riftborn:abyssal_crystal_block",
+    "riftborn:abyss_gate",
+    "riftborn:resonator",
+    "riftborn:resonance_lock",
+    "riftborn:ancient_stele",
+    "riftborn:colossus_altar",
+    "riftborn:architect_altar",
+    "riftborn:sovereign_altar",
+    "riftborn:phase_barrier",
+    "riftborn:sovereign_standard"
+  ]
+}

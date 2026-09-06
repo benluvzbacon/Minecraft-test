@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:overworld_ruin",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 4197231,
+    "spacing": 32,
+    "separation": 10,
+    "spread_type": "linear"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "note=0": {
+      "model": "riftborn:block/resonator_0"
+    },
+    "note=1": {
+      "model": "riftborn:block/resonator_1"
+    },
+    "note=2": {
+      "model": "riftborn:block/resonator_2"
+    },
+    "note=3": {
+      "model": "riftborn:block/resonator_3"
+    }
+  }
+}

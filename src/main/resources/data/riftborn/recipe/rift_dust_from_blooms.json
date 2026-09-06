@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "riftborn:void_bloom"
+    },
+    {
+      "item": "riftborn:void_bloom"
+    }
+  ],
+  "result": {
+    "id": "riftborn:rift_dust",
+    "count": 1
+  }
+}

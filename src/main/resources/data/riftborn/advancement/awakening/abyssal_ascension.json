@@ -1,0 +1,40 @@
+{
+  "parent": "riftborn:awakening/the_abyss",
+  "display": {
+    "icon": {
+      "id": "riftborn:abyssal_chestplate"
+    },
+    "title": "Abyssal Ascension",
+    "description": "Upgrade the complete armor set at a smithing table.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "awakened": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "riftborn:abyssal_helmet"
+          },
+          {
+            "items": "riftborn:abyssal_chestplate"
+          },
+          {
+            "items": "riftborn:abyssal_leggings"
+          },
+          {
+            "items": "riftborn:abyssal_boots"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "awakened"
+    ]
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:rift_ruin",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 4197243,
+    "spacing": 18,
+    "separation": 6,
+    "spread_type": "linear"
+  }
+}

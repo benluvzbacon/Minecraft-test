@@ -1,0 +1,11 @@
+{
+  "type": "riftborn:rift_surface",
+  "biomes": "#riftborn:has_structure/awakening/storm_observatory",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "beard_thin",
+  "start_pool": "riftborn:awakening/storm_observatory",
+  "size": 1,
+  "surface_search_radius": 64,
+  "circular_footprint": true
+}

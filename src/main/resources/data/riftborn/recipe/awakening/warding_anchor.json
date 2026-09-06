@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " G ",
+    "RSC",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "item": "riftborn:stormglass"
+    },
+    "R": {
+      "item": "riftborn:rift_core"
+    },
+    "S": {
+      "item": "minecraft:shield"
+    },
+    "C": {
+      "item": "riftborn:abyssal_core"
+    }
+  },
+  "result": {
+    "id": "riftborn:warding_anchor",
+    "count": 1
+  }
+}
