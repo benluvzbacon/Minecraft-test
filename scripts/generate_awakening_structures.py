@@ -154,4 +154,9 @@ def generate(name,spec):
     t.write(RES/f'data/riftborn/structure/awakening/{name}.nbt')
 if __name__=='__main__':
     for name,spec in STRUCTURES.items():generate(name,spec)
+    from resource_tools import ROOT
+    arena=Template((64,20,64));arena.clear()
+    for x in range(64):
+        for z in range(64):arena.set(x,0,z,'riftborn:abyssal_stone')
+    arena.write(ROOT/'src/gametest/resources/data/riftborn_test/structure/awakening_arena.nbt')
     print('Generated ten distinct Awakening structures with reachable loot, lore, gateways, puzzle and arenas.')

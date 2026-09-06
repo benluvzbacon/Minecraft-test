@@ -28,6 +28,7 @@ public final class RiftbornWorldTests implements ModInitializer {
         if (!valid) throw new IllegalStateException("RIFTBORN_SMOKE_FAILURE: " + message);
     }
     @Override public void onInitialize() {
+        AwakeningWorldTests.initialize();
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             var world = server.getWorld(RiftDimensions.WORLD);
             require(world != null, "The Rift must exist on a normal server");
