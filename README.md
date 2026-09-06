@@ -53,6 +53,10 @@ The separate **`riftborn-1.21.1-diagnostics`** artifact contains test reports, l
 
 ### Rift Armor and Rift Flight
 
+![Rift Armor worn in game](docs/images/riftborn-armor.png)
+
+*Actual client capture: all four armor pieces equipped, while hovering using Rift Flight.*
+
 | Piece | Protection | Durability | Crafting materials |
 | --- | ---: | ---: | --- |
 | Rift Helmet | 3 | 495 | 5 Void Fragments + 1 Rift Core |
@@ -159,7 +163,7 @@ Other useful commands:
 ./gradlew clean build     # full clean rebuild
 ```
 
-See [docs/TESTING.md](docs/TESTING.md) for the headless multiplayer test, CI details, and verification scope. The [1.0.0 verification record](docs/VERIFICATION.md) is retained as the baseline; Ascension adds armor/flight, lifecycle, preservation, and Rift-placement regression checks.
+See [docs/TESTING.md](docs/TESTING.md) for the headless multiplayer test, CI details, and verification scope. The [1.5.0 verification record](docs/VERIFICATION-1.5.md) records the passing build, 18 unit tests, 35 GameTests, live client/server checks, and jar checksum. The [1.0.0 record](docs/VERIFICATION.md) is retained as the historical baseline.
 
 ### Configuration
 

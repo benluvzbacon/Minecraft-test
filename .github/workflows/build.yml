@@ -76,23 +76,6 @@ jobs:
         run: |
           set -o pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' python3 scripts/smoke_multiplayer.py --accept-eula 2>&1 | tee smoke-log.txt
-      # Temporary verification transport; the release artifact above remains jar-only.
-      - name: Export inspection copies
-        if: always() && steps.build.outcome == 'success' && github.event_name != 'pull_request'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs'), crypto = require('crypto');
-            for (const file of ['build/libs/riftborn-1.5.0.jar', 'run/smoke-client/screenshots/riftborn-armor.png', 'run/smoke-client/screenshots/riftborn-flight.png']) {
-              if (!fs.existsSync(file)) continue;
-              const bytes = fs.readFileSync(file), data = bytes.toString('base64'), name = file.split('/').pop();
-              const sha256 = crypto.createHash('sha256').update(bytes).digest('hex'), count = Math.ceil(data.length / 50000);
-              for (let index = 0; index < count; index++) await github.rest.checks.create({
-                owner: context.repo.owner, repo: context.repo.repo, head_sha: context.sha,
-                name: `Riftborn inspection ${name} ${index + 1}/${count}`, status: 'completed', conclusion: 'success',
-                output: {title: name, summary: JSON.stringify({name, sha256, size: bytes.length, index, count}),
-                  text: data.slice(index * 50000, (index + 1) * 50000)}});
-            }
       - name: Publish diagnostic check
         if: always() && github.event_name != 'pull_request'
         uses: actions/github-script@v8
