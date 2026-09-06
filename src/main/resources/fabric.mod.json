@@ -3,7 +3,7 @@
   "id": "riftborn",
   "version": "${version}",
   "name": "Riftborn",
-  "description": "Follow the fractures. Explore a world of floating ruins, awaken the Rift Guardian, and forge the Riftblade.",
+  "description": "Rift Ascension: explore floating ruins, challenge the Rift Guardian, forge Rift Armor, and master Rift Flight.",
   "authors": [
     "Riftborn contributors"
   ],
@@ -23,5 +23,8 @@
     "java": ">=21",
     "fabric-api": ">=0.116.6+1.21.1"
   },
-  "icon": "assets/riftborn/icon.png"
+  "icon": "assets/riftborn/icon.png",
+  "mixins": [
+    "riftborn.mixins.json"
+  ]
 }

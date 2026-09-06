@@ -1,12 +1,14 @@
 package dev.riftborn;
 
 import dev.riftborn.config.RiftbornConfig;
+import dev.riftborn.effect.RiftFlight;
 import dev.riftborn.registry.ModBlocks;
 import dev.riftborn.registry.ModEntities;
 import dev.riftborn.registry.ModItems;
 import dev.riftborn.registry.ModParticles;
 import dev.riftborn.registry.ModPointsOfInterest;
 import dev.riftborn.world.RiftWorldgen;
+import dev.riftborn.world.RiftStructures;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -30,7 +32,9 @@ public final class Riftborn implements ModInitializer {
         ModPointsOfInterest.initialize();
         ModEntities.initialize();
         ModItems.initialize();
+        RiftStructures.initialize();
         RiftWorldgen.initialize();
+        RiftFlight.initialize();
         LOGGER.info("Riftborn initialized: follow the fractures.");
     }
 }

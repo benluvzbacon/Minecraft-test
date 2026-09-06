@@ -161,6 +161,68 @@ def generate_items():
         write_json(A + f"models/item/{name}_spawn_egg.json", {"parent": "minecraft:item/template_spawn_egg"})
 
 
+def generate_armor():
+    # Four independent inventory icons, plus the native 1.21.1 biped armor UV sheets.
+    edge, metal, rune = (78, 51, 105), (32, 24, 46), (186, 102, 249)
+    icons = {}
+    helmet = Image(16, 16)
+    helmet.rect(3, 3, 12, 12, edge); helmet.rect(4, 4, 11, 11, metal)
+    helmet.rect(5, 8, 10, 11, (0, 0, 0, 0)); helmet.line(4, 6, 11, 6, rune)
+    helmet.pixel(7, 4, TEAL); helmet.pixel(8, 4, TEAL)
+    helmet.line(2, 2, 3, 5, PURPLE); helmet.line(13, 2, 12, 5, PURPLE)
+    icons["rift_helmet"] = helmet
+    chest = Image(16, 16)
+    chest.rect(3, 3, 12, 13, edge); chest.rect(4, 4, 11, 12, metal)
+    chest.rect(1, 3, 3, 7, PURPLE); chest.rect(12, 3, 14, 7, PURPLE)
+    chest.rect(6, 2, 9, 4, (0, 0, 0, 0))
+    chest.line(7, 6, 5, 8, rune); chest.line(5, 8, 8, 11, rune)
+    chest.line(8, 11, 10, 8, rune); chest.line(10, 8, 7, 6, rune)
+    chest.rect(7, 7, 8, 9, TEAL); chest.line(4, 12, 11, 12, rune)
+    icons["rift_chestplate"] = chest
+    legs = Image(16, 16)
+    legs.rect(3, 2, 12, 6, edge); legs.rect(3, 7, 6, 13, metal); legs.rect(9, 7, 12, 13, metal)
+    legs.line(3, 3, 12, 3, rune); legs.rect(7, 3, 8, 4, TEAL)
+    legs.line(4, 7, 4, 12, PURPLE); legs.line(11, 7, 11, 12, PURPLE)
+    icons["rift_leggings"] = legs
+    boots = Image(16, 16)
+    boots.rect(3, 3, 6, 11, metal); boots.rect(9, 3, 12, 11, metal)
+    boots.rect(1, 10, 6, 13, edge); boots.rect(9, 10, 14, 13, edge)
+    boots.line(3, 4, 6, 4, rune); boots.line(9, 4, 12, 4, rune)
+    boots.line(2, 12, 6, 12, PURPLE); boots.line(9, 12, 13, 12, PURPLE)
+    boots.pixel(4, 7, TEAL); boots.pixel(11, 7, TEAL)
+    icons["rift_boots"] = boots
+    for name, image in icons.items():
+        image.save(A + f"textures/item/{name}.png")
+        write_json(A + f"models/item/{name}.json", {"parent": "minecraft:item/generated", "textures": {"layer0": f"riftborn:item/{name}"}})
+
+    for layer in (1, 2):
+        image = Image(64, 32)
+        rng = random.Random(1500 + layer)
+        # Armor model visibility is selected by the native equipment slot renderer.
+        regions = [(0, 0, 31, 15), (16, 16, 39, 31), (40, 16, 55, 31), (0, 25, 15, 31)] if layer == 1 else [(0, 16, 15, 31), (16, 28, 39, 31)]
+        for x0, y0, x1, y1 in regions:
+            for y in range(y0, y1 + 1):
+                for x in range(x0, x1 + 1):
+                    n = rng.randrange(-4, 5)
+                    image.pixel(x, y, tuple(v + n for v in metal))
+        if layer == 1:
+            image.rect(9, 11, 14, 14, (0, 0, 0, 0))  # Open visor; the player's face remains visible.
+            image.line(8, 10, 15, 10, rune)
+            image.line(8, 14, 8, 9, PURPLE); image.line(15, 14, 15, 9, PURPLE)
+            image.rect(11, 8, 12, 9, TEAL)
+            for a, b, c, d in [(23, 22, 20, 26), (20, 26, 24, 30), (24, 30, 27, 26), (27, 26, 23, 22)]:
+                image.line(a, b, c, d, rune)
+            image.rect(23, 25, 24, 27, TEAL)
+            image.line(40, 20, 55, 20, PURPLE); image.line(40, 30, 55, 30, rune)
+            image.line(0, 26, 15, 26, rune); image.line(0, 31, 15, 31, PURPLE)
+            image.rect(5, 28, 6, 29, TEAL)
+        else:
+            image.line(16, 29, 39, 29, rune); image.rect(23, 29, 24, 30, TEAL)
+            image.line(4, 20, 4, 30, PURPLE); image.line(7, 20, 7, 30, PURPLE)
+            image.rect(5, 24, 6, 25, rune)
+        image.save(A + f"textures/models/armor/rift_layer_{layer}.png")
+
+
 def generate_entities():
     for index, (name, base, glow) in enumerate([
         ("rift_stalker", (42, 29, 55), (202, 131, 250)),
@@ -233,6 +295,7 @@ def generate_sky_and_particles():
 if __name__ == "__main__":
     generate_blocks()
     generate_items()
+    generate_armor()
     generate_entities()
     generate_sky_and_particles()
     print("Generated Riftborn PNG textures and client models.")

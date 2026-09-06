@@ -28,7 +28,7 @@ class ResourceIntegrityTest {
     private static final Path DATA = RES.resolve("data/riftborn");
     private static final Set<String> BLOCKS = Set.of("rift_stone", "rift_anchor", "guardian_altar", "void_bloom");
     private static final Set<String> MOBS = Set.of("rift_stalker", "void_brute", "rift_wisp", "rift_guardian");
-    private static final Set<String> ITEMS = Set.of("rift_shard", "rift_dust", "void_fragment", "rift_core", "rift_heart", "rift_compass", "riftblade");
+    private static final Set<String> ITEMS = Set.of("rift_shard", "rift_dust", "void_fragment", "rift_core", "rift_heart", "rift_compass", "riftblade", "rift_helmet", "rift_chestplate", "rift_leggings", "rift_boots");
 
     private static List<Path> files(Path path, String suffix) throws IOException {
         try (var stream = Files.walk(path)) { return stream.filter(p -> p.toString().endsWith(suffix)).sorted().toList(); }
@@ -177,6 +177,19 @@ class ResourceIntegrityTest {
                 .getAsJsonArray("pools").get(0).getAsJsonObject().getAsJsonArray("entries").get(0).getAsJsonObject();
         assertEquals("riftborn:rift_heart", heart.get("name").getAsString());
         assertEquals(1, heart.getAsJsonArray("functions").get(0).getAsJsonObject().getAsJsonObject("count").get("min").getAsInt());
+    }
+
+    @Test void armorHasBothNativeModelLayersAndRecipes() throws IOException {
+        for (int layer : new int[]{1, 2}) {
+            var texture = ImageIO.read(ASSETS.resolve("textures/models/armor/rift_layer_" + layer + ".png").toFile());
+            assertNotNull(texture); assertEquals(64, texture.getWidth()); assertEquals(32, texture.getHeight());
+        }
+        for (String name : List.of("rift_helmet", "rift_chestplate", "rift_leggings", "rift_boots")) {
+            var recipe = json(DATA.resolve("recipe/" + name + ".json"));
+            assertEquals("riftborn:" + name, recipe.getAsJsonObject("result").get("id").getAsString());
+            assertEquals("minecraft:crafting_shaped", recipe.get("type").getAsString());
+            exists(ASSETS.resolve("textures/item/" + name + ".png"));
+        }
     }
 
     private static Object readTag(DataInputStream in, int type) throws IOException {

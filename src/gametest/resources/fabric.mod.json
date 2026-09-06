@@ -1,9 +1,17 @@
 {
   "schemaVersion": 1,
   "id": "riftborn_test",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "name": "Riftborn GameTests (development only)",
   "environment": "*",
-  "entrypoints": {"fabric-gametest": ["dev.riftborn.test.RiftbornGameTests"]},
-  "depends": {"riftborn": "*", "fabric-gametest-api-v1": "*"}
+  "entrypoints": {
+    "fabric-gametest": [
+      "dev.riftborn.test.RiftbornGameTests",
+      "dev.riftborn.test.RiftFlightGameTests"
+    ]
+  },
+  "depends": {
+    "riftborn": "*",
+    "fabric-gametest-api-v1": "*"
+  }
 }

@@ -2,6 +2,8 @@ package dev.riftborn.registry;
 
 import dev.riftborn.Riftborn;
 import dev.riftborn.item.DescribedItem;
+import dev.riftborn.item.RiftArmorItem;
+import net.minecraft.item.ArmorItem;
 import dev.riftborn.item.RiftCompassItem;
 import dev.riftborn.item.RiftbladeItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
@@ -22,6 +24,10 @@ public final class ModItems {
     public static final Item RIFT_HEART = register("rift_heart", new DescribedItem(new Item.Settings().fireproof().rarity(Rarity.EPIC)));
     public static final Item RIFT_COMPASS = register("rift_compass", new RiftCompassItem(new Item.Settings().maxCount(1).rarity(Rarity.UNCOMMON)));
     public static final Item RIFTBLADE = register("riftblade", new RiftbladeItem(new Item.Settings().fireproof().rarity(Rarity.EPIC)));
+    public static final Item RIFT_HELMET = register("rift_helmet", new RiftArmorItem(ArmorItem.Type.HELMET));
+    public static final Item RIFT_CHESTPLATE = register("rift_chestplate", new RiftArmorItem(ArmorItem.Type.CHESTPLATE));
+    public static final Item RIFT_LEGGINGS = register("rift_leggings", new RiftArmorItem(ArmorItem.Type.LEGGINGS));
+    public static final Item RIFT_BOOTS = register("rift_boots", new RiftArmorItem(ArmorItem.Type.BOOTS));
     public static final Item RIFT_STALKER_SPAWN_EGG = register("rift_stalker_spawn_egg", new SpawnEggItem(ModEntities.RIFT_STALKER, 0x261631, 0xc77aff, new Item.Settings()));
     public static final Item VOID_BRUTE_SPAWN_EGG = register("void_brute_spawn_egg", new SpawnEggItem(ModEntities.VOID_BRUTE, 0x12101d, 0x864dbe, new Item.Settings()));
     public static final Item RIFT_WISP_SPAWN_EGG = register("rift_wisp_spawn_egg", new SpawnEggItem(ModEntities.RIFT_WISP, 0x532d80, 0x9afff3, new Item.Settings()));
@@ -35,6 +41,7 @@ public final class ModItems {
                 entries.add(ModBlocks.GUARDIAN_ALTAR); entries.add(ModBlocks.VOID_BLOOM);
                 entries.add(RIFT_SHARD); entries.add(VOID_FRAGMENT); entries.add(RIFT_DUST);
                 entries.add(RIFT_CORE); entries.add(RIFT_COMPASS); entries.add(RIFT_HEART); entries.add(RIFTBLADE);
+                entries.add(RIFT_HELMET); entries.add(RIFT_CHESTPLATE); entries.add(RIFT_LEGGINGS); entries.add(RIFT_BOOTS);
                 entries.add(RIFT_STALKER_SPAWN_EGG); entries.add(VOID_BRUTE_SPAWN_EGG);
                 entries.add(RIFT_WISP_SPAWN_EGG); entries.add(RIFT_GUARDIAN_SPAWN_EGG);
             }).build());

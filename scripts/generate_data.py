@@ -60,12 +60,19 @@ def generate_loot_and_recipes():
         "rift_dust_from_blooms": {"type": "minecraft:crafting_shapeless", "category": "misc", "ingredients": [{"item": "riftborn:void_bloom"}] * 2,
                                  "result": {"id": "riftborn:rift_dust", "count": 1}},
     }
+    armor = ("rift_helmet", "rift_chestplate", "rift_leggings", "rift_boots")
+    for name, pattern in zip(armor, (["FFF", "FCF"], ["FCF", "FHF", "FFF"], ["FFF", "FCF", "F F"], ["F F", "FCF"])):
+        key = {"F": {"item": "riftborn:void_fragment"}, "C": {"item": "riftborn:rift_core"}}
+        if name == "rift_chestplate": key["H"] = {"item": "riftborn:rift_heart"}
+        recipes[name] = {"type": "minecraft:crafting_shaped", "category": "equipment", "pattern": pattern,
+                         "key": key, "result": {"id": f"riftborn:{name}", "count": 1}}
     for furnace, ticks in [("smelting", 200), ("blasting", 100)]:
         recipes["rift_shard_from_" + furnace] = {"type": "minecraft:" + furnace, "category": "misc", "ingredient": {"item": "riftborn:rift_stone"},
                                                "result": {"id": "riftborn:rift_shard", "count": 1}, "experience": 0.7, "cookingtime": ticks}
     for name, recipe in recipes.items():
         write_json(D + f"recipe/{name}.json", recipe)
         trigger_item = {"riftblade": "rift_heart", "rift_dust_from_blooms": "void_bloom", "rift_shard_from_dust": "rift_dust"}.get(name, "rift_shard" if name == "rift_compass" else "rift_stone")
+        if name in armor: trigger_item = "void_fragment"
         write_json(D + f"advancement/recipes/{name}.json", {"parent": "minecraft:recipes/root", "criteria": {
             "has_material": {"trigger": "minecraft:inventory_changed", "conditions": {"items": [{"items": f"riftborn:{trigger_item}"}]}},
             "has_the_recipe": {"trigger": "minecraft:recipe_unlocked", "conditions": {"recipe": f"riftborn:{name}"}}},
@@ -76,6 +83,14 @@ def generate_loot_and_recipes():
         tag("minecraft", "block", name, ["riftborn:rift_anchor", "riftborn:guardian_altar"])
     for name in ("swords", "enchantable/sword", "enchantable/weapon", "enchantable/sharp_weapon", "enchantable/durability"):
         tag("minecraft", "item", name, ["riftborn:riftblade"])
+
+    armor_ids = ["riftborn:" + name for name in armor]
+    tag("minecraft", "item", "enchantable/durability", ["riftborn:riftblade"] + armor_ids)
+    for group in ("armor", "enchantable/armor", "enchantable/equippable", "trimmable_armor"):
+        tag("minecraft", "item", group, armor_ids)
+    for slot, name in zip(("head", "chest", "leg", "foot"), armor):
+        tag("minecraft", "item", slot + "_armor", ["riftborn:" + name])
+        tag("minecraft", "item", "enchantable/" + slot + "_armor", ["riftborn:" + name])
 
 
 def generate_worldgen():
@@ -154,8 +169,12 @@ def generate_worldgen():
                      "start_height": {"absolute": 0}, "project_start_to_heightmap": "WORLD_SURFACE_WG", "max_distance_from_center": 80,
                      "use_expansion_hack": False}
         if name != "overworld_ruin":
-            # Reject starts over the void; the complete foundation must fit above Y=32.
-            structure["dimension_padding"] = {"bottom": 32, "top": 16}
+            # Only Rift structures use surface-aware placement. The Overworld JSON,
+            # pools, templates, placement salts, and frequencies remain unchanged.
+            structure["type"] = "riftborn:rift_surface"
+            for key in ("start_height", "project_start_to_heightmap", "max_distance_from_center", "use_expansion_hack"):
+                structure.pop(key)
+            structure["surface_search_radius"] = 48 if name == "rift_ruin" else 64
         write_json(D + f"worldgen/structure/{name}.json", structure)
         write_json(D + f"worldgen/structure_set/{name}.json", {"structures": [{"structure": f"riftborn:{name}", "weight": 1}],
                    "placement": {"type": "minecraft:random_spread", "salt": salt, "spacing": spacing, "separation": separation, "spread_type": "linear"}})
@@ -229,6 +248,11 @@ def generate_language():
         language[f"entity.riftborn.{name}"] = title
         language[f"item.riftborn.{name}_spawn_egg"] = title + " Spawn Egg"
     language["entity.riftborn.rift_bolt"] = "Rift Bolt"
+    for suffix, title in (("helmet", "Helmet"), ("chestplate", "Chestplate"), ("leggings", "Leggings"), ("boots", "Boots")):
+        language[f"item.riftborn.rift_{suffix}"] = "Rift " + title
+        language[f"item.riftborn.rift_{suffix}.tooltip"] = "Full Rift Armor set: Rift Flight at three times Creative flight speed."
+    language["item.riftborn.rift_armor.tooltip"] = "Full set: Rift Flight. Three times normal Creative flight speed."
+    language["item.riftborn.rift_armor.controls"] = "Double-tap Jump to fly. Jump/Sneak: ascend/descend. Removing any piece ends Rift Flight."
     language.update(generate_advancements())
     write_json(A + "lang/en_us.json", language)
 

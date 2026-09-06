@@ -6,19 +6,19 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-JAR = ROOT / 'build/libs/riftborn-1.0.0.jar'
+JAR = ROOT / 'build/libs/riftborn-1.5.0.jar'
 with zipfile.ZipFile(JAR) as archive:
     names = archive.namelist()
     assert len(names) == len(set(names)), 'Duplicate entries in production jar'
     assert archive.testzip() is None, 'Invalid jar CRC'
     metadata = json.loads(archive.read('fabric.mod.json'))
-    assert metadata['id'] == 'riftborn' and metadata['version'] == '1.0.0'
+    assert metadata['id'] == 'riftborn' and metadata['version'] == '1.5.0'
     assert metadata['environment'] == '*'
     for group in ('main', 'client'):
         for entrypoint in metadata['entrypoints'][group]:
             assert entrypoint.replace('.', '/') + '.class' in names, entrypoint
     assert not any('riftborn_test' in name or 'RiftbornGameTests' in name
-                   or 'RiftbornSmokeClient' in name for name in names), 'Development mod leaked into jar'
+                   or 'dev/riftborn/test/' in name or 'RiftbornSmokeClient' in name for name in names), 'Development mod leaked into jar'
     classes = [archive.read(name) for name in names if name.endswith('.class')]
     assert classes and all(code[:4] == b'\xca\xfe\xba\xbe' and int.from_bytes(code[6:8], 'big') == 65
                            for code in classes), 'Classes must target Java 21'
