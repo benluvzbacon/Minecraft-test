@@ -70,7 +70,7 @@ The complete set provides **20 armor points**, **3 armor toughness per piece**, 
 - A quiet takeoff sound and a small periodic trail of Rift motes accompany flight.
 - Removing or breaking **any** piece revokes the armor's permission and speed boost on the server. Land before removing armor: gravity and ordinary fall/void hazards resume.
 - Death, respawn, dimension transfers, reconnects, and game-mode changes recheck the actual equipped set. Saves contain baseline capabilities, not a permanent Survival flight flag; resuming saved flight requires the complete set again.
-- **Creative and Spectator keep their normal native flight and speed**, with or without armor. Independent flight permissions granted by other server systems are not confiscated when Riftborn removes its own bonus.
+- **Creative and Spectator keep their normal native flight and speed**, with or without armor. A pre-existing independent flight permission is restored when Riftborn removes its own bonus.
 - **The Riftblade is unchanged.** Even while wearing flying armor, its blink still needs a clear path and a supported landing. Flight does not bypass its void-safety check.
 
 Armor recipes (`F` = Void Fragment, `C` = Rift Core, `H` = Rift Heart, `.` = empty slot):

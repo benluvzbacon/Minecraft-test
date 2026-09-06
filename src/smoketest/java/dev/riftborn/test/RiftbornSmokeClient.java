@@ -198,9 +198,11 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
                 }
             }
             case 9 -> {
-                if (ticks - stageTick == 20) stoppedPosition = client.player.getPos();
-                if (ticks - stageTick > 40) {
-                    require(client.player.getPos().squaredDistanceTo(stoppedPosition) < 0.05, "Flight must stop normally when input is released");
+                // Native Creative flight coasts with air drag; allow that normal braking period.
+                if (ticks - stageTick == 60) stoppedPosition = client.player.getPos();
+                if (ticks - stageTick > 80) {
+                    require(client.player.getPos().squaredDistanceTo(stoppedPosition) < 0.05,
+                            "Flight must settle after normal air-drag braking: position=" + client.player.getPos() + ", velocity=" + client.player.getVelocity());
                     beforeFlight = client.player.getPos();
                     client.options.backKey.setPressed(true); client.options.sneakKey.setPressed(true);
                     next(10);

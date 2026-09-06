@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "riftborn_worldtest",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "name": "Riftborn normal-world verification (development only)",
   "environment": "server",
   "entrypoints": {"main": ["dev.riftborn.test.RiftbornWorldTests"]},
