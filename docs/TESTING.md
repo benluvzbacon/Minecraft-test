@@ -18,13 +18,21 @@ The resource tests cover:
 - Required boss loot and the absence of a craftable Rift Heart.
 - Common code does not import client-only classes.
 
+After building, audit the actual remapped archive (requires Python 3):
+
+```sh
+python3 scripts/verify_jar.py
+```
+
+This verifies Java 21 bytecode, intermediary remapping, packaged resources and entrypoints, and exclusion of the development test mods. It writes `build/jar-verification.json` and `build/libs/SHA256SUMS`.
+
 ## Dedicated-server GameTests
 
 ```sh
 ./gradlew runGametest
 ```
 
-This boots Fabric's GameTest server and loads the actual dynamic registries and datapacks. Tests include clear-path blinking, solid walls, thin glass panes, headroom, lava, missing footing, authoritative cooldown and durability, recipe-manager crafting, entity attributes, dimension registration, return-point serialization, projectile impact, Stalker teleportation, Brute knockback, Wisp ranged AI, nearby-anchor POI lookup, Guardian phase transition, Heart drops/minion cleanup, and decoding the jigsaw structure templates. Vanilla 1.21.1's GameTest server constructs only its predefined vanilla worlds; the separate normal dedicated-server smoke test verifies Rift world creation, natural structure locating, and cross-dimension travel.
+This boots Fabric's GameTest server and loads the actual dynamic registries and datapacks. Tests include clear-path blinking, solid walls, thin glass panes, headroom, lava, missing footing, authoritative cooldown and durability, recipe-manager crafting, mining/tool tags, Overworld ore-biome injection, entity attributes, dimension registration, return-point serialization, projectile impact, Stalker teleportation, Brute knockback, Wisp ranged AI, nearby-anchor POI lookup, Guardian phase transition, Heart drops/minion cleanup, and decoding the jigsaw structure templates. Vanilla 1.21.1's GameTest server constructs only its predefined vanilla worlds; the separate normal dedicated-server smoke test verifies Rift world creation, natural structure locating, and cross-dimension travel.
 
 Output: `build/gametest/results.xml` and `build/gametest/logs/latest.log`.
 
@@ -53,7 +61,7 @@ The harness:
 4. Starts an actual Fabric client that connects over the vanilla protocol.
 5. Uses a Rift Core on an Overworld anchor, checking the dimension transition and exact material consumption.
 6. Uses the Riftblade through normal client interactions; verifies movement, durability and cooldown synchronization, and a rejected repeated use.
-7. Receives/renders all four custom mobs, the shrine, dimension sky, and particles, and captures a screenshot.
+7. Receives/renders all four custom mobs, the shrine, dimension sky, and particles; samples real floating-island terrain below the display; and captures a screenshot.
 8. Uses a Rift Anchor to return to the player's original Overworld entry point.
 9. Shuts down both processes cleanly.
 
@@ -63,7 +71,7 @@ Logs: `build/smoke-reports/`. Screenshot: `run/smoke-client/screenshots/riftborn
 
 ## Continuous integration
 
-`.github/workflows/build.yml` runs the build, the GameTest server, and the headless multiplayer test on Java 21. A diagnostic check exposes stage results and log tails; the `riftborn-1.21.1` Actions artifact contains the jars, reports, logs, and screenshot. GitHub workflow-write permission is needed to update that workflow.
+`.github/workflows/build.yml` runs the build, the GameTest server, and the headless multiplayer test on Java 21. A separate GameTest check exposes full test results, and a diagnostic check exposes stage results, the jar audit, and log tails; the `riftborn-1.21.1` Actions artifact contains the jars, reports, logs, and screenshot. GitHub workflow-write permission is needed to update that workflow.
 
 ## What automated checks do not prove
 

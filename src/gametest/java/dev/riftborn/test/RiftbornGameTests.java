@@ -248,7 +248,10 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = ARENA, tickLimit = 160) public void wispFliesAndShootsFromRange(TestContext context) {
-        var wisp = context.spawnMob(ModEntities.RIFT_WISP, 12, 5, 8);
+        // Yarn's spawnMob maps to vanilla spawnWithNoFreeWill and strips goals.
+        // Use spawnEntity so this test actually runs the Wisp's production AI.
+        var wisp = context.spawnEntity(ModEntities.RIFT_WISP, 12, 5, 8);
+        Vec3d startingPosition = wisp.getPos();
         var target = context.spawnMob(EntityType.COW, 6, 2, 8);
         target.setAiDisabled(true);
         wisp.setTarget(target);
@@ -261,13 +264,14 @@ public final class RiftbornGameTests implements FabricGameTest {
                             wisp.getBoundingBox().expand(40), entity -> entity.getOwner() == wisp).size());
             context.assertTrue(wisp.squaredDistanceTo(target) > 16, "Wisp should keep its distance rather than melee");
             context.assertTrue(wisp.hasNoGravity(), "Wisp should remain airborne");
+            context.assertTrue(wisp.getPos().squaredDistanceTo(startingPosition) > 1, "Wisp flight AI must move it");
             wisp.discard();
             context.complete();
         });
     }
 
     @GameTest(templateName = ARENA, tickLimit = 160) public void stalkerCanTeleportDuringCombat(TestContext context) {
-        var stalker = context.spawnMob(ModEntities.RIFT_STALKER, 8, 2, 8);
+        var stalker = context.spawnEntity(ModEntities.RIFT_STALKER, 8, 2, 8);
         var target = context.spawnMob(EntityType.COW, 2, 2, 8);
         target.setAiDisabled(true);
         // Hold walking still so this specifically measures the teleport, not pathfinding.
@@ -280,6 +284,19 @@ public final class RiftbornGameTests implements FabricGameTest {
             stalker.discard();
             context.complete();
         });
+    }
+
+
+    @GameTest(templateName = ARENA) public void riftStoneHasMiningAndWorldgenRules(TestContext context) {
+        var stone = ModBlocks.RIFT_STONE.getDefaultState();
+        context.assertTrue(new ItemStack(Items.IRON_PICKAXE).isSuitableFor(stone), "Iron pickaxe must harvest Rift Stone");
+        context.assertFalse(new ItemStack(Items.STONE_PICKAXE).isSuitableFor(stone), "Stone pickaxe must not harvest Rift Stone");
+        context.assertFalse(new ItemStack(Items.IRON_AXE).isSuitableFor(stone), "An axe is not a suitable mining tool");
+        var oreKey = RegistryKey.of(RegistryKeys.PLACED_FEATURE, Riftborn.id("rift_stone_ore"));
+        var generation = context.getWorld().getBiome(context.getAbsolutePos(BlockPos.ORIGIN)).value().getGenerationSettings();
+        context.assertTrue(generation.getFeatures().stream().flatMap(features -> features.stream())
+                .anyMatch(feature -> feature.matchesKey(oreKey)), "Overworld biome generation must include Rift Stone ore");
+        context.complete();
     }
 
 }

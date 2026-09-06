@@ -112,6 +112,9 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
                 }
             }
             case 5 -> {
+                // Keep the captured scene free of first-login chat/tutorial/advancement overlays.
+                client.getToastManager().clear();
+                client.inGameHud.getChatHud().clear(false);
                 if (ticks - stageTick > 100) {
                     Set<EntityType<?>> visibleTypes = new HashSet<>();
                     for (var entity : client.world.getEntities()) {
@@ -122,6 +125,20 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
                     }
                     require(visibleTypes.containsAll(Set.of(ModEntities.RIFT_STALKER, ModEntities.VOID_BRUTE,
                             ModEntities.RIFT_WISP, ModEntities.RIFT_GUARDIAN)), "All four mob types must reach the client");
+                    int floatingColumns = 0;
+                    for (int x = -32; x <= 64; x += 8) {
+                        for (int z = -32; z <= 64; z += 8) {
+                            int solid = 0;
+                            for (int y = 20; y <= 112; y += 4) {
+                                if (!client.world.getBlockState(new BlockPos(x, y, z)).isAir()) solid++;
+                            }
+                            // The display structure is at Y=140; this samples real terrain below it.
+                            if (solid > 0 && client.world.getBlockState(new BlockPos(x, 4, z)).isAir()
+                                    && client.world.getBlockState(new BlockPos(x, 124, z)).isAir()) floatingColumns++;
+                        }
+                    }
+                    require(floatingColumns > 8, "Natural floating-island terrain must reach the client: " + floatingColumns);
+                    Riftborn.LOGGER.info("RIFTBORN_FLOATING_TERRAIN_OK: {} sampled floating columns", floatingColumns);
                     ScreenshotRecorder.saveScreenshot(client.runDirectory, "riftborn-smoke.png", client.getFramebuffer(),
                             message -> Riftborn.LOGGER.info("Smoke screenshot: {}", message.getString()));
                     Riftborn.LOGGER.info("RIFTBORN_SCENE_RENDER_OK");
