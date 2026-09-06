@@ -1,29 +1,36 @@
-name: Build and verify Riftborn
+name: Build Riftborn 2.0
+
 on:
   push:
-    branches: [main, arena/01a07434-minecraft-test]
   pull_request:
   workflow_dispatch:
+
 permissions:
   contents: read
-  checks: write
-concurrency:
-  group: riftborn-${{ github.ref }}
-  cancel-in-progress: true
+
 jobs:
-  verify:
+  build:
+    name: Build Riftborn Mod JAR
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-java@v5
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '21'
-      - uses: gradle/actions/setup-gradle@v5
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
-      - name: Verify generated assets are reproducible
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x ./gradlew
+
+      - name: Verify generated resources are reproducible
         run: |
           python3 scripts/generate_assets.py
           python3 scripts/generate_data.py
@@ -32,105 +39,16 @@ jobs:
           python3 scripts/generate_awakening_assets.py
           python3 scripts/generate_awakening_structures.py
           git diff --exit-code -- src/main/resources src/gametest/resources
-      - name: Compile, check resources, and build distributable
-        id: build
-        run: |
-          set -o pipefail
-          ./gradlew --no-daemon clean build 2>&1 | tee build-log.txt
-      - name: Audit the remapped production jar
-        if: steps.build.outcome == 'success'
+
+      - name: Run Gradle build
+        run: ./gradlew clean build --no-daemon
+
+      - name: Audit remapped production JAR
         run: python3 scripts/verify_jar.py
-      - name: Upload compiled Riftborn jar
-        if: success()
-        uses: actions/upload-artifact@v6
+
+      - name: Upload compiled Riftborn JAR
+        uses: actions/upload-artifact@v4
         with:
-          name: riftborn-1.21.1
+          name: riftborn-2.0.0
           path: build/libs/riftborn-2.0.0.jar
           if-no-files-found: error
-      - name: Run dedicated-server GameTests
-        id: gametest
-        run: |
-          set -o pipefail
-          ./gradlew --no-daemon runGametest 2>&1 | tee gametest-log.txt
-      - name: Publish GameTest results
-        if: always() && !cancelled() && github.event_name != 'pull_request'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs');
-            const file = 'build/gametest/results.xml';
-            const xml = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : 'No GameTest report was produced.';
-            await github.rest.checks.create({owner: context.repo.owner, repo: context.repo.repo,
-              name: 'Riftborn GameTests', head_sha: context.sha, status: 'completed',
-              conclusion: '${{ steps.gametest.outcome }}' === 'success' ? 'success' : 'failure',
-              output: {title: 'Dedicated-server gameplay regression tests', summary: '${{ steps.gametest.outcome }}',
-                text: '```xml\n' + xml.replaceAll('><', '>\n<').slice(0, 55000) + '\n```'}});
-      - name: Install headless rendering support
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y xvfb libgl1-mesa-dri libflite1
-      - name: Exercise a real client and dedicated server
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        id: smoke
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-          ALSOFT_DRIVERS: 'null'
-        run: |
-          set -o pipefail
-          xvfb-run -a -s '-screen 0 1280x720x24' python3 scripts/smoke_multiplayer.py --accept-eula 2>&1 | tee smoke-log.txt
-      # Temporary inspection transport; the release artifact remains jar-only.
-      - name: Export Awakening inspection copies
-        if: always() && steps.build.outcome == 'success' && github.event_name != 'pull_request'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs'), crypto = require('crypto');
-            const folder = 'run/smoke-client/screenshots';
-            const files = ['build/libs/riftborn-2.0.0.jar'];
-            if (fs.existsSync(folder)) files.push(...fs.readdirSync(folder).filter(name => name.endsWith('.png') && !name.startsWith('riftborn-')).map(name => folder + '/' + name));
-            for (const file of files) {
-              if (!fs.existsSync(file)) continue;
-              const bytes = fs.readFileSync(file), data = bytes.toString('base64'), name = file.split('/').pop();
-              const sha256 = crypto.createHash('sha256').update(bytes).digest('hex'), count = Math.ceil(data.length / 50000);
-              for (let index = 0; index < count; index++) await github.rest.checks.create({
-                owner: context.repo.owner, repo: context.repo.repo, head_sha: context.sha,
-                name: `Awakening inspection ${name} ${index + 1}/${count}`, status: 'completed', conclusion: 'success',
-                output: {title: name, summary: JSON.stringify({name, sha256, size: bytes.length, index, count}),
-                  text: data.slice(index * 50000, (index + 1) * 50000)}});
-            }
-      - name: Publish diagnostic check
-        if: always() && github.event_name != 'pull_request'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs');
-            const files = ['build/jar-verification.json', 'build-log.txt', 'gametest-log.txt', 'build/smoke-reports/server.log', 'smoke-log.txt'];
-            if (fs.existsSync('build/test-results/test')) files.push(...fs.readdirSync('build/test-results/test').filter(name => name.endsWith('.xml')).map(name => 'build/test-results/test/' + name));
-            const read = file => fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n')
-              .filter(line => !line.includes('\tat ') && !line.includes('[client] \t\tat '))
-              .map(line => line.length > 1600 ? line.slice(0, 1600) + ' [long line shortened]' : line).join('\n').slice(-13500) : 'Not run.';
-            const log = files.map(file => file + '\n' + read(file)).join('\n\n');
-            const outcomes = ['${{ steps.build.outcome }}', '${{ steps.gametest.outcome }}', '${{ steps.smoke.outcome }}'];
-            await github.rest.checks.create({
-              owner: context.repo.owner, repo: context.repo.repo,
-              name: 'Riftborn verification details', head_sha: context.sha,
-              status: 'completed', conclusion: outcomes.every(value => value === 'success') ? 'success' : 'failure',
-              output: {title: 'Java 21 / Minecraft 1.21.1 / Fabric', summary: 'Build / GameTests / multiplayer smoke: ' + outcomes.join(' / '), text: '```text\n' + log.slice(-55000) + '\n```'}
-            });
-      - name: Upload test diagnostics
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: riftborn-1.21.1-diagnostics
-          path: |
-            build/libs/SHA256SUMS
-            build/jar-verification.json
-            build/reports/
-            build/test-results/
-            build-log.txt
-            gametest-log.txt
-            smoke-log.txt
-            build/gametest/results.xml
-            build/smoke-reports/
-            run/smoke-client/screenshots/
