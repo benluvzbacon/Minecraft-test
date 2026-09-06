@@ -28,18 +28,37 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon build 2>&1 | tee build-log.txt
+      - name: Run dedicated-server GameTests
+        id: gametest
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runGametest 2>&1 | tee gametest-log.txt
+      - name: Install headless rendering support
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Exercise a real client and dedicated server
+        id: smoke
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          ALSOFT_DRIVERS: 'null'
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' python3 scripts/smoke_multiplayer.py --accept-eula 2>&1 | tee smoke-log.txt
       - name: Publish diagnostic check
         if: always() && github.event_name != 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const log = fs.existsSync('build-log.txt') ? fs.readFileSync('build-log.txt', 'utf8') : 'Build did not start.';
+            const files = ['build-log.txt', 'gametest-log.txt', 'smoke-log.txt'];
+            const log = files.map(file => file + '\n' + (fs.existsSync(file) ? fs.readFileSync(file, 'utf8').slice(-18000) : 'Not run.')).join('\n\n');
+            const outcomes = ['${{ steps.build.outcome }}', '${{ steps.gametest.outcome }}', '${{ steps.smoke.outcome }}'];
             await github.rest.checks.create({
               owner: context.repo.owner, repo: context.repo.repo,
               name: 'Riftborn verification details', head_sha: context.sha,
-              status: 'completed', conclusion: '${{ steps.build.outcome }}' === 'success' ? 'success' : 'failure',
-              output: {title: 'Java 21 / Minecraft 1.21.1 / Fabric', summary: 'Gradle build output (last 55 KB).', text: '```text\n' + log.slice(-55000) + '\n```'}
+              status: 'completed', conclusion: outcomes.every(value => value === 'success') ? 'success' : 'failure',
+              output: {title: 'Java 21 / Minecraft 1.21.1 / Fabric', summary: 'Build / GameTests / multiplayer smoke: ' + outcomes.join(' / '), text: '```text\n' + log.slice(-55000) + '\n```'}
             });
       - uses: actions/upload-artifact@v4
         if: always()
@@ -50,3 +69,8 @@ jobs:
             build/reports/
             build/test-results/
             build-log.txt
+            gametest-log.txt
+            smoke-log.txt
+            build/gametest/results.xml
+            build/smoke-reports/
+            run/smoke-client/screenshots/

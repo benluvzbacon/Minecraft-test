@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "riftborn_smoketest",
+  "version": "1.0.0",
+  "name": "Riftborn Multiplayer Smoke Test (development only)",
+  "environment": "client",
+  "entrypoints": {"client": ["dev.riftborn.test.RiftbornSmokeClient"]},
+  "depends": {"riftborn": "*", "fabric-api": "*"}
+}

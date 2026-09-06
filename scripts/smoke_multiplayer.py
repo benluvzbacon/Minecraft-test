@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Launch an isolated Fabric server and a real rendered client; exercise vanilla network paths.
+
+Linux CI: LIBGL_ALWAYS_SOFTWARE=1 ALSOFT_DRIVERS=null xvfb-run -a python3 scripts/smoke_multiplayer.py --accept-eula
+The temporary, offline-mode server is confined to build/smoke-server. Never use its properties in production.
+"""
+import argparse
+from pathlib import Path
+import queue
+import subprocess
+import sys
+import threading
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+REPORT = ROOT / "build/smoke-reports"
+SERVER = ROOT / "build/smoke-server"
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--accept-eula", action="store_true", help="Accept https://aka.ms/MinecraftEULA for the isolated test server")
+    args = parser.parse_args()
+    if not args.accept_eula:
+        parser.error("This test starts Minecraft. Read its EULA, then pass --accept-eula to proceed.")
+    REPORT.mkdir(parents=True, exist_ok=True)
+    SERVER.mkdir(parents=True, exist_ok=True)
+    (SERVER / "eula.txt").write_text("eula=true\n")
+    (SERVER / "server.properties").write_text("\n".join([
+        "online-mode=false", "server-ip=0.0.0.0", "server-port=25565", "max-players=2", "view-distance=5", "simulation-distance=5",
+        "spawn-protection=0", "difficulty=normal", "level-seed=4197231", "level-name=smoke-world", "sync-chunk-writes=false",
+        "enable-status=false", "enforce-secure-profile=false", "motd=Riftborn isolated CI test", ""]))
+    messages = queue.Queue()
+    processes = {}
+    logs = {}
+    gradle = [str(ROOT / "gradlew"), "--no-daemon", "-Dorg.gradle.jvmargs=-Xmx512m"]
+
+    def start(name, task):
+        logs[name] = open(REPORT / (name + ".log"), "w", encoding="utf-8")
+        process = subprocess.Popen(gradle + [task], cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True, bufsize=1)
+        processes[name] = process
+
+        def consume():
+            for line in process.stdout:
+                logs[name].write(line)
+                logs[name].flush()
+                messages.put((name, line.rstrip()))
+            messages.put((name, None))
+        threading.Thread(target=consume, daemon=True).start()
+
+    def command(command):
+        processes["server"].stdin.write(command + "\n")
+        processes["server"].stdin.flush()
+
+    def fixture():
+        for cmd in [
+            "gamerule doMobSpawning false", "gamerule doWeatherCycle false", "gamerule doDaylightCycle false",
+            "gamerule keepInventory true", "gamerule spawnChunkRadius 0", "time set day",
+            "fill -6 99 -6 6 99 6 minecraft:stone", "fill -6 100 -6 6 106 6 minecraft:air",
+            "setblock 0 100 0 riftborn:rift_anchor[open=false]", "setworldspawn 0 100 2",
+            "execute in riftborn:the_rift run place template riftborn:guardian_shrine 0 140 0",
+            "execute in riftborn:the_rift run fill -4 140 34 36 140 48 riftborn:rift_stone",
+            'execute in riftborn:the_rift run summon riftborn:rift_stalker 10.5 141 25.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b}',
+            'execute in riftborn:the_rift run summon riftborn:void_brute 23.5 141 25.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b}',
+            'execute in riftborn:the_rift run summon riftborn:rift_wisp 13.5 144 25.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b}',
+            'execute in riftborn:the_rift run summon riftborn:rift_guardian 16.5 142 18.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b}',
+            "execute in riftborn:the_rift run locate structure riftborn:guardian_shrine",
+            "execute in minecraft:overworld run locate structure riftborn:overworld_ruin",
+        ]:
+            command(cmd)
+
+    success = False
+    joined = False
+    server_ready = False
+    expected_stop = False
+    deadline = time.monotonic() + 600
+    try:
+        start("server", "runSmokeServer")
+        while time.monotonic() < deadline:
+            try:
+                name, line = messages.get(timeout=1)
+            except queue.Empty:
+                continue
+            if line is None:
+                code = processes[name].wait(timeout=10)
+                if name == "client" and success and code == 0:
+                    expected_stop = True
+                    command("stop")
+                elif name == "server" and expected_stop and code == 0:
+                    print("RIFTBORN_DEDICATED_SERVER_AND_CLIENT_OK", flush=True)
+                    return 0
+                else:
+                    raise RuntimeError(f"{name} exited unexpectedly (exit {code}, client success {success})")
+                continue
+            print(f"[{name}] {line}", flush=True)
+            if name == "server" and "Done (" in line and not server_ready:
+                server_ready = True
+                fixture()
+                start("client", "runClientSmoke")
+            if name == "server" and "RiftbornTester joined the game" in line and not joined:
+                joined = True
+                for cmd in ["gamemode survival RiftbornTester", "clear RiftbornTester",
+                            "tp RiftbornTester 0.5 100 2.5 180 0", "effect give RiftbornTester minecraft:resistance 999 4 true",
+                            "item replace entity RiftbornTester weapon.mainhand with riftborn:rift_core 3"]:
+                    command(cmd)
+            if name == "client" and "RIFTBORN_TRAVEL_ENTRY_OK" in line:
+                command("execute in riftborn:the_rift run tp RiftbornTester 16.5 141 40.5 180 0")
+                command("item replace entity RiftbornTester weapon.mainhand with riftborn:riftblade")
+                command("execute in riftborn:the_rift run particle riftborn:rift_mote 16 144 27 4 2 4 0.02 150 force RiftbornTester")
+            if name == "client" and "RIFTBORN_SCENE_RENDER_OK" in line:
+                command("clear RiftbornTester")
+                command("execute in riftborn:the_rift run tp RiftbornTester 16.5 141 6.5 180 0")
+            if name == "client" and "RIFTBORN_MULTIPLAYER_SMOKE_OK" in line:
+                success = True
+            if "RIFTBORN_SMOKE_FAILURE:" in line:
+                raise RuntimeError(line)
+        raise TimeoutError("The multiplayer smoke test exceeded 10 minutes")
+    finally:
+        for process in processes.values():
+            if process.poll() is None: process.terminate()
+        for process in processes.values():
+            try: process.wait(timeout=20)
+            except subprocess.TimeoutExpired: process.kill()
+        for log in logs.values(): log.close()
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception as exc:
+        print(f"RIFTBORN_SMOKE_FAILURE: {exc}", file=sys.stderr)
+        sys.exit(1)

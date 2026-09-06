@@ -50,3 +50,54 @@ test { useJUnitPlatform() }
 jar {
     from('LICENSE') { rename { "${it}_${project.base.archivesName.get()}" } }
 }
+
+// Separate development-only mods: none of this code is bundled into the distributable jar.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+    smoketest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output + sourceSets.client.compileClasspath + sourceSets.client.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output + sourceSets.client.runtimeClasspath + sourceSets.client.output
+    }
+}
+loom {
+    mods {
+        riftborn_test { sourceSet sourceSets.gametest }
+        riftborn_smoketest { sourceSet sourceSets.smoketest }
+    }
+    runs {
+        gametest {
+            server()
+            name 'Riftborn GameTests'
+            source sourceSets.gametest
+            runDir 'build/gametest'
+            vmArg '-Dfabric-api.gametest'
+            vmArg "-Dfabric-api.gametest.report-file=${layout.buildDirectory.file('gametest/results.xml').get().asFile}"
+            vmArg '-Xmx1536m'
+        }
+        clientSmoke {
+            client()
+            name 'Riftborn multiplayer client smoke test'
+            source sourceSets.smoketest
+            runDir 'run/smoke-client'
+            vmArg '-Xmx1536m'
+            programArgs '--username', 'RiftbornTester', '--quickPlayMultiplayer', '127.0.0.1:25565'
+        }
+        smokeServer {
+            server()
+            name 'Riftborn isolated smoke server'
+            runDir 'build/smoke-server'
+            vmArg '-Xmx1536m'
+            programArg 'nogui'
+        }
+        server { vmArg '-Xmx1536m' }
+    }
+}
+tasks.named('runServer') { standardInput = System.in }
+tasks.named('runSmokeServer') { standardInput = System.in }
+tasks.named('runGametest') {
+    doFirst { file('build/gametest').mkdirs() }
+}
+tasks.named('check') { dependsOn 'compileGametestJava', 'compileSmoketestJava' }

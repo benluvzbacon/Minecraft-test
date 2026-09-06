@@ -24,11 +24,22 @@ public final class SafeTeleport {
             Vec3d offset = direction.multiply(distance);
             Vec3d pos = entity.getPos().add(offset);
             Box box = entity.getBoundingBox().offset(offset);
-            if (!isClear(world, entity, box) || !world.isChunkLoaded(BlockPos.ofFloored(pos))) break;
+            if (!areChunksLoaded(world, box) || !isClear(world, entity, box)) break;
             // Do not strand the player over the void. The path may cross gaps, the landing may not.
             if (distance >= 1.0 && hasFloor(world, entity, box)) best = pos;
         }
         return Optional.ofNullable(best);
+    }
+
+    private static boolean areChunksLoaded(ServerWorld world, Box box) {
+        int minX = net.minecraft.util.math.MathHelper.floor(box.minX) >> 4;
+        int maxX = net.minecraft.util.math.MathHelper.floor(box.maxX) >> 4;
+        int minZ = net.minecraft.util.math.MathHelper.floor(box.minZ) >> 4;
+        int maxZ = net.minecraft.util.math.MathHelper.floor(box.maxZ) >> 4;
+        for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) {
+            if (!world.getChunkManager().isChunkLoaded(x, z)) return false;
+        }
+        return true;
     }
 
     public static boolean isClear(ServerWorld world, Entity entity, Box box) {
@@ -42,7 +53,7 @@ public final class SafeTeleport {
         // An inset footprint avoids treating an adjacent wall as a floor.
         Box feet = new Box(box.minX + 0.05, box.minY - 0.25, box.minZ + 0.05,
                 box.maxX - 0.05, box.minY, box.maxZ - 0.05);
-        return !world.isSpaceEmpty(entity, feet) && !world.containsFluid(feet);
+        return world.getBlockCollisions(entity, feet).iterator().hasNext() && !world.containsFluid(feet);
     }
 
     public static Optional<Vec3d> findLanding(ServerWorld world, Entity entity, BlockPos center, int radius) {
