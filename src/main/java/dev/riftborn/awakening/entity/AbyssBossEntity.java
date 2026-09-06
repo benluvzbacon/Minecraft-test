@@ -159,6 +159,7 @@ public abstract class AbyssBossEntity extends AbyssHostileEntity {
         if (!getVisibilityCache().canSee(target))
             return;
         Vec3d aim = target.getEyePos();
+        speed = Math.max(speed, 1.1f);
         shotsFired += Math.min(count, 5);
         for (int i = 0; i < Math.min(count, 5); i++)
             AbyssBoltEntity.fire(w, this, aim.add((i - (count - 1) / 2.0) * 1.1, 0, (i % 2) * 0.5), damage, speed);

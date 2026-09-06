@@ -1,4 +1,4 @@
-# Riftborn 1.5 — Rift Ascension
+# Riftborn 2.0 — The Rift Awakening
 
 A survival adventure mod for **Minecraft Java Edition 1.21.1**, **Fabric**, and **Java 21**.
 
@@ -7,6 +7,22 @@ Mine purple-veined Rift Stone, follow the signals of ruined dimensional anchors,
 ![The Rift and Guardian shrine in Minecraft](docs/images/the-rift.png)
 
 *Actual in-game capture from the automated client/server test; the shrine is placed as a test exhibition.*
+
+## The Rift Awakening — new in 2.0
+
+The Rift Guardian was guarding a seal. Its defeat starts an exploration-led endgame, while the original Overworld → Rift → Guardian → Rift Armor/Riftblade journey remains available.
+
+**New endgame path:** Broken Temple → Resonant Sigil → Abyssal Key → The Abyss → Abyssal gear → Abyssal Colossus → Rift Architect → The Collapse → Abyss Sovereign → Rift Master.
+
+- **The Abyss:** a separate 384-block-tall dimension with broad, vertically layered landmasses, giant gaps, three-dimensional underground hollows, glowing shale, crystal ore, and a fractured ringed planet. It is not a copy of The Rift's generator.
+- **Ten additional natural structures:** citadels, the temple puzzle, sky ruins, fortresses, laboratories, observatories, and distinct boss arenas. They reuse terrain-validated placement; existing Overworld generation and the 1.5 Rift placement implementation are unchanged.
+- **Five Abyss combat roles:** a cloaking quadruped stalker, flying strafing reaver, heavy brute, behavior-mirroring echo, and beam-wielding sentinel.
+- **Three major bosses:** Colossus, Architect, and the three-phase Sovereign. The Collapse has its own Herald encounter.
+- **Abyssal Armor**, configurable armor flight, faster braking, and a collision/terrain-checked **Rift Dash** (default **R**).
+- **Greatblade, Voidbow, and three-mode Rift Staff**, plus a one-at-a-time offhand artifact system.
+- **Rift Storms and The Collapse**, server-owned cooldowns and progression, bounded enemy waves, environmental clues, and an advancement branch.
+
+See the [Awakening field guide](docs/AWAKENING.md) for recipes, controls, counterplay, and progression. The original mechanics below are retained; the new gear builds on them rather than replacing them.
 
 ## Requirements
 
@@ -25,14 +41,14 @@ Riftborn is required on **both the client and the server**. It is not a Forge/Ne
 
 1. Install Java 21 and the Fabric Loader profile for Minecraft **1.21.1**.
 2. Put the matching **Fabric API** jar in the instance's `mods` directory.
-3. Put **`riftborn-1.5.0.jar`** in the same directory.
+3. Put **`riftborn-2.0.0.jar`** in the same directory.
 4. Start the Fabric instance. For a dedicated server, put both jars in that server's `mods` directory too.
 
 Back up existing worlds first. Ore and Overworld ruins appear in **newly generated chunks**. Do not remove Riftborn from a save while players or important builds are in The Rift; removing content mods can damage modded saves.
 
 ### Getting the jar
 
-Download **`riftborn-1.21.1`** from **Actions → Build and verify Riftborn → a successful run → Artifacts**. GitHub packages the artifact as a ZIP containing just **`riftborn-1.5.0.jar`** at its root. Extract that jar and put it in `mods`; no build command is needed. The artifact name identifies Minecraft 1.21.1; the jar name identifies Riftborn version 1.5.0.
+Download **`riftborn-1.21.1`** from **Actions → Build and verify Riftborn → a successful run → Artifacts**. GitHub packages the artifact as a ZIP containing just **`riftborn-2.0.0.jar`** at its root. Extract that jar and put it in `mods`; no build command is needed. The artifact name identifies Minecraft 1.21.1; the jar name identifies Riftborn version 2.0.0.
 
 The separate **`riftborn-1.21.1-diagnostics`** artifact contains test reports, logs, checksums, and screenshots—not the installation jar. To build locally with `gradlew.bat`, use the full repository checkout as described below, not the compiled-jar artifact.
 
@@ -69,8 +85,8 @@ The complete set provides **20 armor points**, **3 armor toughness per piece**, 
 **Full-set bonus: Rift Flight**
 
 - Wear the Rift Helmet, Chestplate, Leggings, and Boots in their respective armor slots. Holding a piece or mixing in another armor type does not count.
-- In **Survival or Adventure**, double-tap Jump to toggle flight, just as in Creative. Use Jump to ascend, Sneak to descend, and your normal movement controls to steer. Releasing movement input brakes normally.
-- Flight speed is **three times normal Creative flight** (`0.15` versus the normal `0.05`). This does not grant Creative mode, invulnerability, building permissions, or noclip.
+- In **Survival or Adventure**, double-tap Jump to toggle flight, just as in Creative. Use Jump to ascend, Sneak to descend, and your normal movement controls to steer. Releasing movement input now uses additional, smooth horizontal braking for Rift/Abyssal armor only; native Creative flight is unchanged.
+- By default, Rift Armor flight speed is **three times normal Creative flight** (`0.15` versus the normal `0.05`); this is now server-configurable. This does not grant Creative mode, invulnerability, building permissions, or noclip.
 - A quiet takeoff sound and a small periodic trail of Rift motes accompany flight.
 - Removing or breaking **any** piece revokes the armor's permission and speed boost on the server. Land before removing armor: gravity and ordinary fall/void hazards resume.
 - Death, respawn, dimension transfers, reconnects, and game-mode changes recheck the actual equipped set. Saves contain baseline capabilities, not a permanent Survival flight flag; resuming saved flight requires the complete set again.
@@ -149,8 +165,8 @@ Windows PowerShell: from the full repository's root, run `.\gradlew.bat build`. 
 Outputs:
 
 ```text
-build/libs/riftborn-1.5.0.jar          ← install this
-build/libs/riftborn-1.5.0-sources.jar  ← development sources
+build/libs/riftborn-2.0.0.jar          ← install this
+build/libs/riftborn-2.0.0-sources.jar  ← development sources
 ```
 
 Other useful commands:
@@ -175,11 +191,21 @@ The first start creates **`config/riftborn.json`** automatically. Settings take 
   "blinkDistance": 8.0,
   "compassCooldownTicks": 100,
   "locateRadius": 32,
-  "overworldStalkerWeight": 6
+  "overworldStalkerWeight": 6,
+  "riftFlightSpeed": 0.15,
+  "abyssalFlightSpeed": 0.22,
+  "abyssalDashEnabled": true,
+  "abyssalDashCooldownTicks": 160,
+  "realmEventsEnabled": true,
+  "stormIntervalTicks": 36000,
+  "collapseIntervalTicks": 144000,
+  "eventMobCap": 8
 }
 ```
 
 Twenty ticks are one second at normal server speed. `locateRadius` is the vanilla random-spread structure search radius (in **structure-placement regions**, not a distance in blocks). Higher values can increase server search time. `overworldStalkerWeight: 0` disables additional natural Overworld Stalkers, but not creatures already contained in ruins. Invalid/out-of-range configuration falls back to defaults or is safely clamped. Structure spacing, loot, and terrain can also be adjusted through normal datapacks.
+
+Storms normally become eligible every 30–60 minutes while an awakened realm is occupied. Natural Collapses require the Colossus and Architect milestones and a much longer interval (default two hours); the expensive Sovereign-altar ritual provides a deterministic alternative. `eventMobCap` is clamped to 2–12. Flight, cooldowns, loot and event decisions are authoritative on the server. The native Creative/Spectator speeds are not changed.
 
 ### Project layout
 
@@ -194,9 +220,11 @@ src/main/java/dev/riftborn/
   world/       unchanged Overworld hooks, plus Rift-only surface-aware jigsaw placement
   mixin/       server flight packet validation and capability save/game-mode lifecycle hooks
   config/      bounded, server-side configuration
+  awakening/   additive 2.0 progression, Abyss content, mobs/bosses, gear, events and networking
 src/client/java/dev/riftborn/
   client/         client initializer, purple sky, particle factory
   entity/client/  original animated models and renderers
+  awakening/client/  2.0 articulated models, celestial sky, effects and compact ability/event HUD
 src/main/resources/    committed textures, models, loot, recipes, worldgen and NBT templates
 src/test/              file-level resource checks
 src/gametest/          development-only server test mod
@@ -205,7 +233,7 @@ src/worldtest/         development-only normal-server terrain and capability che
 scripts/               reproducible asset generators and optional integration harness
 ```
 
-Client code is isolated with Loom's split source sets. Test mods are **not bundled** into the installation jar. Ascension uses small server-side mixins to validate flight packets and saved capabilities. It does not patch Overworld generation or the Riftblade. No external shaders or custom network protocols are needed.
+Client code is isolated with Loom's split source sets. Test mods are **not bundled** into the installation jar. Ascension uses small server-side mixins to validate flight packets and saved capabilities. It does not patch Overworld generation or the Riftblade. No external shaders are needed. 2.0 adds small Fabric play payloads for the server-validated dash request and realm-event presentation.
 
 ### Asset regeneration
 
@@ -215,6 +243,9 @@ All necessary resources are already committed; Python is **not needed to build t
 python3 scripts/generate_assets.py
 python3 scripts/generate_data.py
 python3 scripts/generate_structures.py
+python3 scripts/generate_awakening.py
+python3 scripts/generate_awakening_assets.py
+python3 scripts/generate_awakening_structures.py
 ```
 
 The generators use only Python's standard library and fixed seeds. Textures and models are original to this project. Audio deliberately reuses registered **vanilla sound events**, so there are no missing custom sound files or separate sound downloads.

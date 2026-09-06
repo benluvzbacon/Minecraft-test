@@ -166,17 +166,17 @@ public final class AwakeningSmoke {
                     c.options.jumpKey.setPressed(false);
                     c.player.setYaw(-90);
                     before = c.player.getPos();
-                    ClientPlayNetworking.send(new AwakeningNetwork.Dash());
+                    AwakeningClient.requestDash(c);
                     next(9);
                 }
             }
             case 9 -> {
                 if (age() > 20) {
-                    require(c.player.getX() > before.x + 10.5, "Networked Rift Dash moves forward");
+                    require(c.player.getX() > before.x + 10.5, "Networked Rift Dash moves forward: before=" + before + ", after=" + c.player.getPos());
                     require(c.player.getItemCooldownManager().isCoolingDown(AbyssItems.ABYSSAL_BOOTS),
                         "Server synchronizes dash cooldown");
                     after = c.player.getPos();
-                    ClientPlayNetworking.send(new AwakeningNetwork.Dash());
+                    AwakeningClient.requestDash(c);
                     next(10);
                 }
             }

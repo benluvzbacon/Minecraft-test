@@ -14,7 +14,8 @@ public final class AbyssSovereignEntity extends AbyssBossEntity {
         experiencePoints = 700;
     }
     public static DefaultAttributeContainer.Builder createAttributes() {
-        return attributes(1000, 0.27, 20, 14, 1.3).add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1);
+        return attributes(1000, 0.27, 20, 14, 1.3).add(EntityAttributes.GENERIC_FOLLOW_RANGE, 72)
+            .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1);
     }
     @Override
     public int bossKind() {

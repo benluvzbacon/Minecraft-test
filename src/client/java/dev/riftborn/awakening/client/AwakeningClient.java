@@ -70,7 +70,7 @@ public final class AwakeningClient {
             while (DASH.wasPressed())
                 if (client.player != null && client.currentScreen == null
                     && ClientPlayNetworking.canSend(AwakeningNetwork.Dash.ID))
-                    ClientPlayNetworking.send(new AwakeningNetwork.Dash());
+                    requestDash(client);
             if (client.world != null && client.player != null && eventKind != 0 && ticks % 5 == 0
                 && AbyssWorlds.isRealm(client.world)) {
                 var r = client.world.random;
@@ -111,6 +111,14 @@ public final class AwakeningClient {
         net.minecraft.client.item.ModelPredicateProviderRegistry.register(AbyssItems.VOIDBOW, Riftborn.id("pulling"),
             (stack, world, entity,
                 seed) -> entity != null && entity.isUsingItem() && entity.getActiveItem() == stack ? 1 : 0);
+    }
+    public static void requestDash(MinecraftClient client) {
+        if (client.player == null || client.getNetworkHandler() == null) return;
+        // A turn and key press can occur after the tick's normal movement packet.
+        // Send the vanilla rotation update first; the server still chooses the safe destination.
+        client.getNetworkHandler().sendPacket(new net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket.LookAndOnGround(
+                client.player.getYaw(), client.player.getPitch(), client.player.isOnGround()));
+        ClientPlayNetworking.send(new AwakeningNetwork.Dash());
     }
     private AwakeningClient() {}
 }

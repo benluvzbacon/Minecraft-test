@@ -10,7 +10,8 @@ public final class CollapseHeraldEntity extends AbyssBossEntity {
         experiencePoints = 150;
     }
     public static DefaultAttributeContainer.Builder createAttributes() {
-        return attributes(260, 0.3, 12, 8, 0.8).add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.9);
+        return attributes(260, 0.3, 12, 8, 0.8).add(EntityAttributes.GENERIC_FOLLOW_RANGE, 72)
+            .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.9);
     }
     @Override
     public int bossKind() {

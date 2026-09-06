@@ -79,6 +79,26 @@ jobs:
         run: |
           set -o pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' python3 scripts/smoke_multiplayer.py --accept-eula 2>&1 | tee smoke-log.txt
+      # Temporary inspection transport; the release artifact remains jar-only.
+      - name: Export Awakening inspection copies
+        if: always() && steps.build.outcome == 'success' && github.event_name != 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs'), crypto = require('crypto');
+            const folder = 'run/smoke-client/screenshots';
+            const files = ['build/libs/riftborn-2.0.0.jar'];
+            if (fs.existsSync(folder)) files.push(...fs.readdirSync(folder).filter(name => name.endsWith('.png') && !name.startsWith('riftborn-')).map(name => folder + '/' + name));
+            for (const file of files) {
+              if (!fs.existsSync(file)) continue;
+              const bytes = fs.readFileSync(file), data = bytes.toString('base64'), name = file.split('/').pop();
+              const sha256 = crypto.createHash('sha256').update(bytes).digest('hex'), count = Math.ceil(data.length / 50000);
+              for (let index = 0; index < count; index++) await github.rest.checks.create({
+                owner: context.repo.owner, repo: context.repo.repo, head_sha: context.sha,
+                name: `Awakening inspection ${name} ${index + 1}/${count}`, status: 'completed', conclusion: 'success',
+                output: {title: name, summary: JSON.stringify({name, sha256, size: bytes.length, index, count}),
+                  text: data.slice(index * 50000, (index + 1) * 50000)}});
+            }
       - name: Publish diagnostic check
         if: always() && github.event_name != 'pull_request'
         uses: actions/github-script@v8

@@ -72,7 +72,7 @@ public final class AwakeningModel<T extends AbyssHostileEntity> extends SinglePa
             }
             if (kind == 4) {
                 part(r.getChild("left_arm"), "shield", 72, 90, -3, 2, -5, 12, 18, 3, 0, 0, 0);
-                part(r.getChild("right_arm"), "spear", 112, 0, -1, -13, -1, 2, 38, 2, -3, 7, 0);
+                part(r.getChild("right_arm"), "spear", 112, 0, -1, -13, -1, 2, 26, 2, -3, 7, 0);
             }
             if (kind >= 4 && kind != 5) {
                 int count = kind == 7 ? 12 : 8;

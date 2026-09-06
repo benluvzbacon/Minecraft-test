@@ -10,7 +10,8 @@ public final class RiftArchitectEntity extends AbyssBossEntity {
         experiencePoints = 400;
     }
     public static DefaultAttributeContainer.Builder createAttributes() {
-        return attributes(650, 0.25, 14, 10, 1).add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.95);
+        return attributes(650, 0.25, 14, 10, 1).add(EntityAttributes.GENERIC_FOLLOW_RANGE, 72)
+            .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.95);
     }
     @Override
     public int bossKind() {
