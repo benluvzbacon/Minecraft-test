@@ -7,6 +7,10 @@ import dev.riftborn.registry.ModItems;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
+import net.minecraft.client.network.ServerAddress;
+import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.Hand;
@@ -25,6 +29,7 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
     private int stage;
     private int stageTick;
     private int enteredTick;
+    private boolean connecting;
     private Vec3d beforeBlink;
     private Vec3d afterBlink;
 
@@ -45,6 +50,16 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
 
     private void tick(MinecraftClient client) {
         if (++ticks > 2400) throw new IllegalStateException("RIFTBORN_SMOKE_FAILURE: client test timed out at stage " + stage);
+        if (ticks % 200 == 0) Riftborn.LOGGER.info("Smoke stage {}, screen {}, world {}, player {}", stage,
+                client.currentScreen == null ? "none" : client.currentScreen.getClass().getSimpleName(),
+                client.world == null ? "none" : client.world.getRegistryKey().getValue(),
+                client.player == null ? "none" : client.player.getPos());
+        if (client.world == null && !connecting && client.getOverlay() == null && ticks > 30) {
+            connecting = true;
+            require(client.getSession().getUsername().equals("RiftbornTester"), "Smoke client username must be deterministic");
+            ConnectScreen.connect(new TitleScreen(), client, ServerAddress.parse("127.0.0.1:25565"),
+                    new ServerInfo("Riftborn isolated smoke", "127.0.0.1:25565", ServerInfo.ServerType.OTHER), false, null);
+        }
         if (client.world == null || client.player == null || client.interactionManager == null) return;
         boolean inRift = client.world.getRegistryKey().equals(RiftDimensions.WORLD);
         switch (stage) {

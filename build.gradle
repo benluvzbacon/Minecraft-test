@@ -83,7 +83,7 @@ loom {
             source sourceSets.smoketest
             runDir 'run/smoke-client'
             vmArg '-Xmx1536m'
-            programArgs '--username', 'RiftbornTester', '--quickPlayMultiplayer', '127.0.0.1:25565'
+            programArgs '--username', 'RiftbornTester'
         }
         smokeServer {
             server()
@@ -101,3 +101,9 @@ tasks.named('runGametest') {
     doFirst { file('build/gametest').mkdirs() }
 }
 tasks.named('check') { dependsOn 'compileGametestJava', 'compileSmoketestJava' }
+
+// Stable archives make a rebuilt release easy to compare by checksum.
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}

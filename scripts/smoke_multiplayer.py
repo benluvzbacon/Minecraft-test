@@ -30,6 +30,9 @@ def main():
         "online-mode=false", "server-ip=0.0.0.0", "server-port=25565", "max-players=2", "view-distance=5", "simulation-distance=5",
         "spawn-protection=0", "difficulty=normal", "level-seed=4197231", "level-name=smoke-world", "sync-chunk-writes=false",
         "enable-status=false", "enforce-secure-profile=false", "motd=Riftborn isolated CI test", ""]))
+    client_dir = ROOT / "run/smoke-client"
+    client_dir.mkdir(parents=True, exist_ok=True)
+    (client_dir / "options.txt").write_text("onboardAccessibility:false\nskipMultiplayerWarning:true\npauseOnLostFocus:false\nnarrator:0\nrenderDistance:5\nmaxFps:60\n")
     messages = queue.Queue()
     processes = {}
     logs = {}
@@ -74,6 +77,7 @@ def main():
     joined = False
     server_ready = False
     expected_stop = False
+    located = set()
     deadline = time.monotonic() + 600
     try:
         start("server", "runSmokeServer")
@@ -88,12 +92,17 @@ def main():
                     expected_stop = True
                     command("stop")
                 elif name == "server" and expected_stop and code == 0:
+                    if located != {"guardian_shrine", "overworld_ruin"}:
+                        raise RuntimeError("Both natural structure locates must succeed: " + repr(located))
                     print("RIFTBORN_DEDICATED_SERVER_AND_CLIENT_OK", flush=True)
                     return 0
                 else:
                     raise RuntimeError(f"{name} exited unexpectedly (exit {code}, client success {success})")
                 continue
             print(f"[{name}] {line}", flush=True)
+            if name == "server" and "The nearest riftborn:" in line:
+                for structure in ("guardian_shrine", "overworld_ruin"):
+                    if "riftborn:" + structure in line: located.add(structure)
             if name == "server" and "Done (" in line and not server_ready:
                 server_ready = True
                 fixture()

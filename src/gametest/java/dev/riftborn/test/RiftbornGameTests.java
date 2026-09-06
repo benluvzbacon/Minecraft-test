@@ -43,9 +43,10 @@ public final class RiftbornGameTests implements FabricGameTest {
 
     private static PlayerEntity player(TestContext context) {
         PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
-        // TestContext.getAbsolute(Vec3d) uses a center offset in 1.21.1. Explicit
-        // bottom-center block coordinates give exact, grounded player feet.
-        player.setPosition(Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(2, 1, 7))));
+        // NBT templates are placed one block above the GameTest control block.
+        // The template's floor is therefore at relative Y=1, and feet at Y=2.
+        context.assertTrue(context.getBlockState(new BlockPos(2, 1, 7)).isOf(ModBlocks.RIFT_STONE), "Test arena floor must be present");
+        player.setPosition(Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(2, 2, 7))));
         return player;
     }
     private static void wall(TestContext context, Block material, int yMin, int yMax) {
@@ -65,7 +66,7 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
     @GameTest(templateName = ARENA) public void blinkStopsBeforeSolidWalls(TestContext context) {
         PlayerEntity player = player(context);
-        wall(context, Blocks.STONE, 1, 3);
+        wall(context, Blocks.STONE, 2, 4);
         var landing = SafeTeleport.findBlinkDestination(context.getWorld(), player, new Vec3d(1, 0, 0), 8);
         context.assertTrue(landing.isPresent(), "Should still land before the wall");
         context.assertTrue(context.getRelative(landing.get()).x < 5.71, "Player AABB may not cross the wall");
@@ -73,7 +74,7 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
     @GameTest(templateName = ARENA) public void blinkStopsAtThinPanes(TestContext context) {
         PlayerEntity player = player(context);
-        wall(context, Blocks.GLASS_PANE, 1, 3);
+        wall(context, Blocks.GLASS_PANE, 2, 4);
         var landing = SafeTeleport.findBlinkDestination(context.getWorld(), player, new Vec3d(1, 0, 0), 8);
         context.assertTrue(landing.isPresent(), "Should land before glass");
         context.assertTrue(context.getRelative(landing.get()).x < 6.2, "Swept collision must not tunnel through panes");
@@ -81,7 +82,7 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
     @GameTest(templateName = ARENA) public void blinkRespectsHeadClearance(TestContext context) {
         PlayerEntity player = player(context);
-        wall(context, Blocks.STONE, 2, 2);
+        wall(context, Blocks.STONE, 3, 3);
         var landing = SafeTeleport.findBlinkDestination(context.getWorld(), player, new Vec3d(1, 0, 0), 8);
         context.assertTrue(landing.isPresent(), "Should land before low ceiling");
         context.assertTrue(context.getRelative(landing.get()).x < 5.71, "Cannot place the player's head in stone");
@@ -89,13 +90,13 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
     @GameTest(templateName = ARENA) public void blinkRefusesVoidLanding(TestContext context) {
         PlayerEntity player = player(context);
-        for (int x = 3; x < 16; x++) for (int z = 0; z < 16; z++) context.setBlockState(x, 0, z, Blocks.AIR);
+        for (int x = 3; x < 16; x++) for (int z = 0; z < 16; z++) context.setBlockState(x, 1, z, Blocks.AIR);
         context.assertTrue(SafeTeleport.findBlinkDestination(context.getWorld(), player, new Vec3d(1, 0, 0), 8).isEmpty(), "No floor means no blink");
         context.complete();
     }
     @GameTest(templateName = ARENA) public void blinkStopsBeforeFluids(TestContext context) {
         PlayerEntity player = player(context);
-        wall(context, Blocks.LAVA, 1, 2);
+        wall(context, Blocks.LAVA, 2, 3);
         var landing = SafeTeleport.findBlinkDestination(context.getWorld(), player, new Vec3d(1, 0, 0), 8);
         context.assertTrue(landing.isPresent(), "Should have a landing before lava");
         context.assertTrue(context.getRelative(landing.get()).x < 5.71, "Blink must not place players in lava");
@@ -107,9 +108,10 @@ public final class RiftbornGameTests implements FabricGameTest {
     @GameTest(templateName = ARENA) public void bladeCooldownAndDurabilityAreServerSide(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         player.changeGameMode(GameMode.SURVIVAL);
-        // TestContext.getAbsolute(Vec3d) uses a center offset in 1.21.1. Explicit
-        // bottom-center block coordinates give exact, grounded player feet.
-        player.setPosition(Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(2, 1, 7))));
+        // NBT templates are placed one block above the GameTest control block.
+        // The template's floor is therefore at relative Y=1, and feet at Y=2.
+        context.assertTrue(context.getBlockState(new BlockPos(2, 1, 7)).isOf(ModBlocks.RIFT_STONE), "Test arena floor must be present");
+        player.setPosition(Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(2, 2, 7))));
         player.setYaw(-90);
         ItemStack blade = new ItemStack(ModItems.RIFTBLADE);
         player.setStackInHand(Hand.MAIN_HAND, blade);
@@ -171,12 +173,12 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = ARENA, tickLimit = 60) public void projectilesDamageTargetsAndDisappear(TestContext context) {
-        RiftStalkerEntity owner = context.spawnMob(ModEntities.RIFT_STALKER, 2, 1, 7);
+        RiftStalkerEntity owner = context.spawnMob(ModEntities.RIFT_STALKER, 2, 2, 7);
         owner.setAiDisabled(true);
-        CowEntity cow = context.spawnMob(EntityType.COW, 9, 1, 7);
+        CowEntity cow = context.spawnMob(EntityType.COW, 9, 2, 7);
         cow.setAiDisabled(true);
         RiftBoltEntity bolt = new RiftBoltEntity(context.getWorld(), owner, 5);
-        bolt.setPosition(Vec3d.ofCenter(context.getAbsolutePos(new BlockPos(3, 1, 7))));
+        bolt.setPosition(Vec3d.ofCenter(context.getAbsolutePos(new BlockPos(3, 2, 7))));
         bolt.setVelocity(1, 0, 0, 0.6f, 0);
         context.getWorld().spawnEntity(bolt);
         context.waitAndRun(25, () -> {
@@ -187,7 +189,7 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = ARENA, tickLimit = 40) public void guardianEntersSecondPhase(TestContext context) {
-        RiftGuardianEntity boss = context.spawnMob(ModEntities.RIFT_GUARDIAN, 8, 1, 8);
+        RiftGuardianEntity boss = context.spawnMob(ModEntities.RIFT_GUARDIAN, 8, 2, 8);
         boss.setHealth(130);
         context.waitAndRun(10, () -> {
             context.assertTrue(boss.isEnraged(), "Guardian should enter phase two below half health");
@@ -198,14 +200,14 @@ public final class RiftbornGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = ARENA, tickLimit = 40) public void guardianDropsHeartAndDismissesWisps(TestContext context) {
-        RiftGuardianEntity boss = context.spawnMob(ModEntities.RIFT_GUARDIAN, 8, 1, 8);
+        RiftGuardianEntity boss = context.spawnMob(ModEntities.RIFT_GUARDIAN, 8, 2, 8);
         boss.setAiDisabled(true);
         var wisp = context.spawnMob(ModEntities.RIFT_WISP, 10, 3, 8);
         wisp.setAiDisabled(true);
         wisp.setSummoner(boss.getUuid());
         boss.damage(context.getWorld().getDamageSources().genericKill(), 1000);
         context.waitAndRun(3, () -> {
-            context.expectItemAt(ModItems.RIFT_HEART, new BlockPos(8, 1, 8), 4);
+            context.expectItemAt(ModItems.RIFT_HEART, new BlockPos(8, 2, 8), 4);
             context.assertTrue(wisp.isRemoved(), "Guardian death must dismiss its summoned Wisps");
             context.complete();
         });
