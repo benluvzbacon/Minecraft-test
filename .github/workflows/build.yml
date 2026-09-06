@@ -34,10 +34,12 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon runGametest 2>&1 | tee gametest-log.txt
       - name: Install headless rendering support
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y xvfb libgl1-mesa-dri
       - name: Exercise a real client and dedicated server
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         id: smoke
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -51,8 +53,8 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const files = ['build-log.txt', 'gametest-log.txt', 'smoke-log.txt'];
-            const log = files.map(file => file + '\n' + (fs.existsSync(file) ? fs.readFileSync(file, 'utf8').slice(-18000) : 'Not run.')).join('\n\n');
+            const files = ['build-log.txt', 'gametest-log.txt', 'build/gametest/results.xml', 'smoke-log.txt'];
+            const log = files.map(file => file + '\n' + (fs.existsSync(file) ? fs.readFileSync(file, 'utf8').slice(-13500) : 'Not run.')).join('\n\n');
             const outcomes = ['${{ steps.build.outcome }}', '${{ steps.gametest.outcome }}', '${{ steps.smoke.outcome }}'];
             await github.rest.checks.create({
               owner: context.repo.owner, repo: context.repo.repo,
