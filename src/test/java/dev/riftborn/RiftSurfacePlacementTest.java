@@ -24,6 +24,14 @@ class RiftSurfacePlacementTest {
         var site = RiftSurfacePlacement.find(FOOTPRINT, (x,z) -> 65 + Math.floorMod(x, 5), 32, 240, 48).orElseThrow();
         assertEquals(68, site.floorY());
     }
+    @Test void circularShrinesIgnoreAirOutsideTheirActualFoundation() {
+        var box = new BlockBox(0, 127, 0, 32, 140, 32);
+        var site = RiftSurfacePlacement.find(box, (x,z) -> {
+            int dx = x - 16, dz = z - 16;
+            return dx * dx + dz * dz <= 256 ? 72 : 110;
+        }, 32, 240, 0, true).orElseThrow();
+        assertEquals(71, site.floorY());
+    }
     @Test void aSingleNeedleInVoidIsNotAnIslandFoundation() {
         assertTrue(RiftSurfacePlacement.find(FOOTPRINT, (x,z) -> x == 8 && z == 8 ? 72 : 0, 32, 240, 48).isEmpty());
     }

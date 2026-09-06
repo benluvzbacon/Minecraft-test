@@ -66,6 +66,11 @@ public final class RiftFlight {
         return player.isAlive() && (mode == GameMode.SURVIVAL || mode == GameMode.ADVENTURE) && hasFullSet(player);
     }
 
+    private static boolean nativeFlightMode(ServerPlayerEntity player) {
+        GameMode mode = player.interactionManager.getGameMode();
+        return mode == GameMode.CREATIVE || mode == GameMode.SPECTATOR;
+    }
+
     public static boolean ownsFlight(ServerPlayerEntity player) { return GRANTS.containsKey(player); }
     public static void refresh(ServerPlayerEntity player) { refresh(player, false); }
     public static void refresh(ServerPlayerEntity player, boolean forceSync) { update(player, true, forceSync); }
@@ -85,7 +90,7 @@ public final class RiftFlight {
         } else if (grant != null) {
             GRANTS.remove(player);
             // Never take Creative/Spectator flight away. Only undo the bonus we own.
-            if (!player.isCreative() && !player.isSpectator()) {
+            if (!nativeFlightMode(player)) {
                 abilities.allowFlying = grant.previousMayFly;
                 if (!abilities.allowFlying) abilities.flying = false;
             }
@@ -116,7 +121,7 @@ public final class RiftFlight {
     public static void writeSavedState(ServerPlayerEntity player, NbtCompound nbt) {
         Grant grant = GRANTS.get(player);
         nbt.remove(RESUME_TAG);
-        if (grant == null || player.isCreative() || player.isSpectator()) return;
+        if (grant == null || nativeFlightMode(player)) return;
         NbtCompound abilities = nbt.getCompound("abilities");
         abilities.putBoolean("mayfly", grant.previousMayFly);
         abilities.putBoolean("flying", false);

@@ -26,14 +26,16 @@ public final class RiftSurfaceStructure extends Structure {
             configCodecBuilder(instance),
             StructurePool.REGISTRY_CODEC.fieldOf("start_pool").forGetter(value -> value.startPool),
             Codec.intRange(0, 7).fieldOf("size").forGetter(value -> value.size),
-            Codec.intRange(0, 64).optionalFieldOf("surface_search_radius", 48).forGetter(value -> value.searchRadius)
+            Codec.intRange(0, 64).optionalFieldOf("surface_search_radius", 48).forGetter(value -> value.searchRadius),
+            Codec.BOOL.optionalFieldOf("circular_footprint", false).forGetter(value -> value.circularFootprint)
     ).apply(instance, RiftSurfaceStructure::new));
 
     private final RegistryEntry<StructurePool> startPool;
     private final int size;
     private final int searchRadius;
-    public RiftSurfaceStructure(Config config, RegistryEntry<StructurePool> startPool, int size, int searchRadius) {
-        super(config); this.startPool = startPool; this.size = size; this.searchRadius = searchRadius;
+    private final boolean circularFootprint;
+    public RiftSurfaceStructure(Config config, RegistryEntry<StructurePool> startPool, int size, int searchRadius, boolean circularFootprint) {
+        super(config); this.startPool = startPool; this.size = size; this.searchRadius = searchRadius; this.circularFootprint = circularFootprint;
     }
     @Override public StructureType<?> getType() { return RiftStructures.SURFACE; }
 
@@ -51,7 +53,7 @@ public final class RiftSurfaceStructure extends Structure {
         var box = pieces.getBoundingBox();
         var site = RiftSurfacePlacement.find(box,
                 (x, z) -> context.chunkGenerator().getHeight(x, z, Heightmap.Type.WORLD_SURFACE_WG, context.world(), context.noiseConfig()),
-                context.world().getBottomY() + 32, context.world().getTopY() - box.getBlockCountY(), searchRadius);
+                context.world().getBottomY() + 32, context.world().getTopY() - box.getBlockCountY(), searchRadius, circularFootprint);
         if (site.isEmpty()) return Optional.empty();
         var landing = site.get();
         int dy = landing.floorY() - box.getMinY();

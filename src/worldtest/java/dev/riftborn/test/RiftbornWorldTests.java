@@ -55,9 +55,10 @@ public final class RiftbornWorldTests implements ModInitializer {
                 }
                 // The same seed/grid in 1.0 had only 31/35 above-map starts (18/14 void failures).
                 // Relocation must preserve at least that many usable starts, not just disable the broken ones.
+                Riftborn.LOGGER.info("RIFTBORN_SURFACE_PLACEMENT_SAMPLE {} valid={}/49, below_map=0, elevations={}", name, generated, elevations);
                 require(generated >= (name.equals("rift_ruin") ? 31 : 35), "Too many valid Rift placements lost: " + name + " " + generated);
                 require(elevations.size() >= 4, "Natural elevations must vary, not be forced to one Y");
-                Riftborn.LOGGER.info("RIFTBORN_SURFACE_PLACEMENT_OK {} valid={}/49, below_map=0, elevations={}", name, generated, elevations);
+                Riftborn.LOGGER.info("RIFTBORN_SURFACE_PLACEMENT_OK {} valid={}/49, below_map=0", name, generated);
 
                 // Also exercise actual natural generation, not only unplaced structure starts.
                 var nearest = generator.locateStructure(world, RegistryEntryList.of(entry), BlockPos.ORIGIN, 32, false);

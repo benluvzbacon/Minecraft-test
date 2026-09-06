@@ -11,6 +11,10 @@ public final class RiftSurfacePlacement {
     public record Site(int offsetX, int floorY, int offsetZ) { }
 
     public static Optional<Site> find(BlockBox box, IntBinaryOperator surfaceHeight, int minSurface, int maxSurface, int radius) {
+        return find(box, surfaceHeight, minSurface, maxSurface, radius, false);
+    }
+
+    public static Optional<Site> find(BlockBox box, IntBinaryOperator surfaceHeight, int minSurface, int maxSurface, int radius, boolean circular) {
         Map<Long, Integer> cache = new HashMap<>();
         IntBinaryOperator height = (x, z) -> cache.computeIfAbsent(((long) x << 32) ^ (z & 0xffffffffL),
                 key -> surfaceHeight.applyAsInt(x, z));
@@ -20,17 +24,20 @@ public final class RiftSurfacePlacement {
                 int center = height.applyAsInt(box.getCenter().getX() + dx, box.getCenter().getZ() + dz);
                 if (center < minSurface || center > maxSurface) continue;
                 // Reject obvious void/cliff candidates cheaply before checking the complete footprint.
-                int supports = 0, low = Integer.MAX_VALUE, high = Integer.MIN_VALUE;
+                int samples = 0, supports = 0, low = Integer.MAX_VALUE, high = Integer.MIN_VALUE;
                 for (int x : new int[]{box.getMinX() + 2, box.getCenter().getX(), box.getMaxX() - 2}) {
                     for (int z : new int[]{box.getMinZ() + 2, box.getCenter().getZ(), box.getMaxZ() - 2}) {
+                        if (!inFootprint(box, x, z, circular)) continue;
+                        samples++;
                         int y = height.applyAsInt(x + dx, z + dz);
                         if (y >= minSurface && y <= maxSurface) { supports++; low = Math.min(low, y); high = Math.max(high, y); }
                     }
                 }
-                if (supports < 5 || high - low > 12) continue;
+                if (supports * 5 < samples * 3 || high - low > 12) continue;
                 int count = 0, supported = 0;
                 low = Integer.MAX_VALUE; high = Integer.MIN_VALUE;
                 for (int x = box.getMinX(); x <= box.getMaxX(); x++) for (int z = box.getMinZ(); z <= box.getMaxZ(); z++) {
+                    if (!inFootprint(box, x, z, circular)) continue;
                     count++;
                     int y = height.applyAsInt(x + dx, z + dz);
                     if (y >= minSurface && y <= maxSurface) { supported++; low = Math.min(low, y); high = Math.max(high, y); }
@@ -43,6 +50,12 @@ public final class RiftSurfacePlacement {
             }
         }
         return Optional.empty(); // A placement cell with no nearby island is not a valid building site.
+    }
+    private static boolean inFootprint(BlockBox box, int x, int z, boolean circular) {
+        if (!circular) return true;
+        int dx = x - box.getCenter().getX(), dz = z - box.getCenter().getZ();
+        int radius = (Math.min(box.getBlockCountX(), box.getBlockCountZ()) - 1) / 2;
+        return dx * dx + dz * dz <= radius * radius;
     }
     private RiftSurfacePlacement() { }
 }

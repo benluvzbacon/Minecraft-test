@@ -175,6 +175,7 @@ def generate_worldgen():
             for key in ("start_height", "project_start_to_heightmap", "max_distance_from_center", "use_expansion_hack"):
                 structure.pop(key)
             structure["surface_search_radius"] = 48 if name == "rift_ruin" else 64
+            if name == "guardian_shrine": structure["circular_footprint"] = True
         write_json(D + f"worldgen/structure/{name}.json", structure)
         write_json(D + f"worldgen/structure_set/{name}.json", {"structures": [{"structure": f"riftborn:{name}", "weight": 1}],
                    "placement": {"type": "minecraft:random_spread", "salt": salt, "spacing": spacing, "separation": separation, "spread_type": "linear"}})

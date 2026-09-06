@@ -1,4 +1,4 @@
-# Riftborn
+# Riftborn 1.5 — Rift Ascension
 
 A survival adventure mod for **Minecraft Java Edition 1.21.1**, **Fabric**, and **Java 21**.
 
@@ -25,14 +25,14 @@ Riftborn is required on **both the client and the server**. It is not a Forge/Ne
 
 1. Install Java 21 and the Fabric Loader profile for Minecraft **1.21.1**.
 2. Put the matching **Fabric API** jar in the instance's `mods` directory.
-3. Put **`riftborn-1.0.0.jar`** in the same directory.
+3. Put **`riftborn-1.5.0.jar`** in the same directory.
 4. Start the Fabric instance. For a dedicated server, put both jars in that server's `mods` directory too.
 
 Back up existing worlds first. Ore and Overworld ruins appear in **newly generated chunks**. Do not remove Riftborn from a save while players or important builds are in The Rift; removing content mods can damage modded saves.
 
 ### Getting the jar
 
-Download **`riftborn-1.21.1`** from **Actions → Build and verify Riftborn → a successful run → Artifacts**. GitHub packages the artifact as a ZIP containing just **`riftborn-1.0.0.jar`** at its root. Extract that jar and put it in `mods`; no build command is needed. The artifact name identifies Minecraft 1.21.1; the jar name identifies Riftborn version 1.0.0.
+Download **`riftborn-1.21.1`** from **Actions → Build and verify Riftborn → a successful run → Artifacts**. GitHub packages the artifact as a ZIP containing just **`riftborn-1.5.0.jar`** at its root. Extract that jar and put it in `mods`; no build command is needed. The artifact name identifies Minecraft 1.21.1; the jar name identifies Riftborn version 1.5.0.
 
 The separate **`riftborn-1.21.1-diagnostics`** artifact contains test reports, logs, checksums, and screenshots—not the installation jar. To build locally with `gradlew.bat`, use the full repository checkout as described below, not the compiled-jar artifact.
 
@@ -49,6 +49,47 @@ The separate **`riftborn-1.21.1-diagnostics`** artifact contains test reports, l
 9. **Awaken The Rift Guardian.** Use another **Rift Core** on the raised **Guardian Altar**. The boss has 280 health, melee attacks, energy bolts, teleportation, limited Wisp summons, and a faster second phase below half health. A purple ring and boss-bar warning telegraph its shockwave: **jump or retreat**. Attacks do not destroy the arena. The boss is not summoned in Peaceful, and another cannot be summoned while one is alive within 96 blocks.
 10. **Claim the Rift Heart and craft the Riftblade.** The Guardian always drops one Heart, additional materials, and experience; its summoned Wisps dissipate. Altars can be used again with another Core after a defeat or a failed attempt.
 
+11. **Ascend with Rift Armor.** Craft all four pieces from Void Fragments and Rift Cores, with a Rift Heart for the chestplate. A complete worn set grants **Rift Flight** without changing your game mode. Another Guardian defeat supplies the Heart if you already used the first for a Riftblade.
+
+### Rift Armor and Rift Flight
+
+| Piece | Protection | Durability | Crafting materials |
+| --- | ---: | ---: | --- |
+| Rift Helmet | 3 | 495 | 5 Void Fragments + 1 Rift Core |
+| Rift Chestplate | 8 | 720 | 7 Void Fragments + 1 Rift Core + 1 Rift Heart |
+| Rift Leggings | 6 | 675 | 7 Void Fragments + 1 Rift Core |
+| Rift Boots | 3 | 585 | 4 Void Fragments + 1 Rift Core |
+
+The complete set provides **20 armor points**, **3 armor toughness per piece**, and **10% knockback resistance per piece**. Repair pieces with Void Fragments. Standard armor enchantments and trims are supported. Each piece has an original inventory icon, and the fitted vanilla biped armor models use custom dark/purple outer and leggings textures.
+
+**Full-set bonus: Rift Flight**
+
+- Wear the Rift Helmet, Chestplate, Leggings, and Boots in their respective armor slots. Holding a piece or mixing in another armor type does not count.
+- In **Survival or Adventure**, double-tap Jump to toggle flight, just as in Creative. Use Jump to ascend, Sneak to descend, and your normal movement controls to steer. Releasing movement input brakes normally.
+- Flight speed is **three times normal Creative flight** (`0.15` versus the normal `0.05`). This does not grant Creative mode, invulnerability, building permissions, or noclip.
+- A quiet takeoff sound and a small periodic trail of Rift motes accompany flight.
+- Removing or breaking **any** piece revokes the armor's permission and speed boost on the server. Land before removing armor: gravity and ordinary fall/void hazards resume.
+- Death, respawn, dimension transfers, reconnects, and game-mode changes recheck the actual equipped set. Saves contain baseline capabilities, not a permanent Survival flight flag; resuming saved flight requires the complete set again.
+- **Creative and Spectator keep their normal native flight and speed**, with or without armor. Independent flight permissions granted by other server systems are not confiscated when Riftborn removes its own bonus.
+- **The Riftblade is unchanged.** Even while wearing flying armor, its blink still needs a clear path and a supported landing. Flight does not bypass its void-safety check.
+
+Armor recipes (`F` = Void Fragment, `C` = Rift Core, `H` = Rift Heart, `.` = empty slot):
+
+```text
+Helmet       Chestplate   Leggings     Boots
+F F F        F C F        F F F        F . F
+F C F        F H F        F C F        F C F
+             F F F        F . F
+```
+
+### Rift-only structure placement fix
+
+Rift ruins and Guardian shrines now validate island terrain across their footprint and look for a nearby suitable island when the initial position is over void. The foundation follows the highest terrain in that footprint, rather than treating a zero-height void column as ground. Vanilla jigsaw pieces, structure templates, loot, mobs, anchors, altars, random rotations, placement spacing, separation, and salts are retained.
+
+The old Rift configuration's dimension padding did not validate the root piece: a normal-server reproduction placed roots at **Y = −1** when the sampled surface was **0**. The new `riftborn:rift_surface` placement type is used **only by the two Rift structures**. **Overworld structure generation is unchanged**, as are the dimension's island-noise generator and the Riftblade implementation.
+
+This generation fix applies to **newly generated chunks**. Existing saved structures and player builds are not deleted, relocated, or regenerated. Existing valid shrines/anchors remain usable; already-generated misplaced structures are not retroactively moved. Back up saves before updating.
+
 ### Returning home
 
 **Use any Rift Anchor in The Rift with an empty hand.** Return trips require no Core and lead to your own saved Overworld entry anchor, not another player's. Your return location survives disconnects and server restarts. A safe arrival platform and return anchor are created once on your first entry; they are not rebuilt over player builds on every visit.
@@ -64,6 +105,7 @@ Dismount before crossing, and allow the normal portal cooldown to settle between
 | Rift Core | Rift Stone in the four corners, Rift Shards on the four edges, Ender Pearl in the center |
 | Rift Compass | Vanilla Compass in the center, Rift Shards on the four edges |
 | Riftblade | Vertical column: Rift Heart → Void Fragment → Rift Core |
+| Rift Armor | Shaped recipes shown above; Void Fragments, Rift Cores, and a Heart for the chestplate |
 
 Recipes unlock in the vanilla recipe book when you obtain their relevant materials. Riftborn also includes a small advancement tree.
 
@@ -103,8 +145,8 @@ Windows PowerShell: from the full repository's root, run `.\gradlew.bat build`. 
 Outputs:
 
 ```text
-build/libs/riftborn-1.0.0.jar          ← install this
-build/libs/riftborn-1.0.0-sources.jar  ← development sources
+build/libs/riftborn-1.5.0.jar          ← install this
+build/libs/riftborn-1.5.0-sources.jar  ← development sources
 ```
 
 Other useful commands:
@@ -117,7 +159,7 @@ Other useful commands:
 ./gradlew clean build     # full clean rebuild
 ```
 
-See [docs/TESTING.md](docs/TESTING.md) for the headless multiplayer test, CI details, and verification scope. The [1.0.0 verification record](docs/VERIFICATION.md) includes the successful run, test counts, and distributable checksum.
+See [docs/TESTING.md](docs/TESTING.md) for the headless multiplayer test, CI details, and verification scope. The [1.0.0 verification record](docs/VERIFICATION.md) is retained as the baseline; Ascension adds armor/flight, lifecycle, preservation, and Rift-placement regression checks.
 
 ### Configuration
 
@@ -144,8 +186,9 @@ src/main/java/dev/riftborn/
   item/        compass, Riftblade, tool material and tooltips
   entity/      hostile mobs, Guardian, energy projectiles
   dimension/   dimension key, safe crossings, saved per-player return points
-  effect/      collision-safe teleport utilities and server effects
-  world/       biome additions and structure tags
+  effect/      unchanged collision-safe teleport utilities, server effects, and reversible armor flight
+  world/       unchanged Overworld hooks, plus Rift-only surface-aware jigsaw placement
+  mixin/       server flight packet validation and capability save/game-mode lifecycle hooks
   config/      bounded, server-side configuration
 src/client/java/dev/riftborn/
   client/         client initializer, purple sky, particle factory
@@ -154,10 +197,11 @@ src/main/resources/    committed textures, models, loot, recipes, worldgen and N
 src/test/              file-level resource checks
 src/gametest/          development-only server test mod
 src/smoketest/         development-only multiplayer client test mod
+src/worldtest/         development-only normal-server terrain and capability checks
 scripts/               reproducible asset generators and optional integration harness
 ```
 
-Client code is isolated with Loom's split source sets. Test mods are **not bundled** into the installation jar. No mixins, external shaders, or custom network protocols are needed.
+Client code is isolated with Loom's split source sets. Test mods are **not bundled** into the installation jar. Ascension uses small server-side mixins to validate flight packets and saved capabilities. It does not patch Overworld generation or the Riftblade. No external shaders or custom network protocols are needed.
 
 ### Asset regeneration
 

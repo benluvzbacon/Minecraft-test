@@ -26,6 +26,14 @@ python3 scripts/verify_jar.py
 
 This verifies Java 21 bytecode, intermediary remapping, packaged resources and entrypoints, and exclusion of the development test mods. It writes `build/jar-verification.json` and `build/libs/SHA256SUMS`.
 
+## Preservation and Ascension checks
+
+`PreservedSystemsTest` fingerprints the Overworld generation data/hooks, original structure NBT/pools/placement sets, mob implementations, Riftblade/collision code, and Gradle wrappers against 1.0. The Windows script is compared with normalized Git line endings. Only the two Rift structure definitions switch to the new placement type.
+
+New unit tests exercise void columns, nearby-island recovery, variable elevations, complete-footprint height selection, and rejection of isolated unsupported needles. Armor resources include all item icons/models/recipes and both native biped texture layers.
+
+New GameTests cover all four removal cases, armor breakage, incomplete sets, Survival and Adventure flight, native Creative/Spectator behavior, game-mode transitions, baseline-capability save/reload, death revocation, independent pre-existing permissions, all four crafting recipes and material stats, and the unchanged Riftblade landing requirement while wearing flight armor.
+
 ## Dedicated-server GameTests
 
 ```sh
@@ -63,15 +71,21 @@ The harness:
 6. Uses the Riftblade through normal client interactions; verifies movement, durability and cooldown synchronization, and a rejected repeated use.
 7. Receives/renders all four custom mobs, the shrine, dimension sky, and particles; samples real floating-island terrain below the display; and captures a screenshot.
 8. Uses a Rift Anchor to return to the player's original Overworld entry point.
-9. Shuts down both processes cleanly.
+9. Equips Rift Armor; exercises real upward/downward/horizontal movement, braking, and direction changes; captures the worn armor.
+10. Removes each piece, submits a forged flying request, and checks both client synchronization and authoritative server capabilities.
+11. Tests Adventure, Creative, Creative armor removal, and returning to unarmored Survival.
+12. Changes dimensions while equipped, disconnects/reconnects while flying, then dies and respawns without armor. No stale flight or bonus speed may remain.
+13. Shuts down both processes cleanly.
 
-Logs: `build/smoke-reports/`. Screenshot: `run/smoke-client/screenshots/riftborn-smoke.png`.
+`src/worldtest` runs only on the isolated normal server. It samples the original 49-position reproduction grid for each Rift structure, requires varied valid elevations and at least the old number of above-map starts, checks real naturally generated structure floors, and provides permission-restricted test assertions for server flight state. It adds no production commands and is excluded from the distributable jar.
+
+Logs: `build/smoke-reports/`. Screenshots: `run/smoke-client/screenshots/riftborn-smoke.png`, `riftborn-armor.png`, and `riftborn-flight.png`.
 
 **Isolation:** the temporary server uses offline mode to let the development client connect without account credentials. It listens on port 25565 in the test environment and is stopped by the harness. Do not expose it publicly or reuse these test properties for a production server. Use a fresh checkout or remove only the generated `build/smoke-server` and `run/smoke-client` test directories when resetting a test. Do not remove any real saves.
 
 ## Continuous integration
 
-`.github/workflows/build.yml` runs the build, the GameTest server, and the headless multiplayer test on Java 21. A separate GameTest check exposes full test results, and a diagnostic check exposes stage results, the jar audit, and log tails; the `riftborn-1.21.1` Actions artifact contains only the compiled `riftborn-1.0.0.jar` at the ZIP root. It is uploaded only after the existing build and jar audit succeed, and a missing jar fails the upload. Reports, logs, checksums, and screenshots are uploaded separately as `riftborn-1.21.1-diagnostics`, including after test failures. GitHub workflow-write permission is needed to update that workflow.
+`.github/workflows/build.yml` runs the build, the GameTest server, and the headless multiplayer test on Java 21. A separate GameTest check exposes full test results, and a diagnostic check exposes stage results, the jar audit, and log tails; the `riftborn-1.21.1` Actions artifact contains only the compiled `riftborn-1.5.0.jar` at the ZIP root. It is uploaded only after the existing build and jar audit succeed, and a missing jar fails the upload. Reports, logs, checksums, and screenshots are uploaded separately as `riftborn-1.21.1-diagnostics`, including after test failures. GitHub workflow-write permission is needed to update that workflow.
 
 ## What automated checks do not prove
 
