@@ -23,6 +23,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Verify generated assets are reproducible
+        run: |
+          python3 scripts/generate_assets.py
+          python3 scripts/generate_data.py
+          python3 scripts/generate_structures.py
+          git diff --exit-code -- src/main/resources src/gametest/resources
       - name: Compile, check resources, and build distributable
         id: build
         run: |
@@ -33,6 +39,19 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon runGametest 2>&1 | tee gametest-log.txt
+      - name: Publish GameTest results
+        if: always() && !cancelled() && github.event_name != 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const file = 'build/gametest/results.xml';
+            const xml = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : 'No GameTest report was produced.';
+            await github.rest.checks.create({owner: context.repo.owner, repo: context.repo.repo,
+              name: 'Riftborn GameTests', head_sha: context.sha, status: 'completed',
+              conclusion: '${{ steps.gametest.outcome }}' === 'success' ? 'success' : 'failure',
+              output: {title: 'Dedicated-server gameplay regression tests', summary: '${{ steps.gametest.outcome }}',
+                text: '```xml\n' + xml.replaceAll('><', '>\n<').slice(0, 55000) + '\n```'}});
       - name: Install headless rendering support
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
@@ -53,7 +72,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const files = ['build-log.txt', 'gametest-log.txt', 'build/gametest/results.xml', 'smoke-log.txt'];
+            const files = ['build-log.txt', 'gametest-log.txt', 'build/smoke-reports/server.log', 'smoke-log.txt'];
             const read = file => fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n')
               .filter(line => !line.includes('\tat ') && !line.includes('[client] \t\tat '))
               .map(line => line.length > 1600 ? line.slice(0, 1600) + ' [long line shortened]' : line).join('\n').slice(-13500) : 'Not run.';

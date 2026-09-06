@@ -4,6 +4,7 @@ import dev.riftborn.Riftborn;
 import dev.riftborn.dimension.RiftDimensions;
 import dev.riftborn.dimension.RiftTravelState;
 import dev.riftborn.effect.SafeTeleport;
+import dev.riftborn.item.RiftCompassItem;
 import dev.riftborn.entity.RiftBoltEntity;
 import dev.riftborn.entity.RiftGuardianEntity;
 import dev.riftborn.entity.RiftStalkerEntity;
@@ -116,8 +117,9 @@ public final class RiftbornGameTests implements FabricGameTest {
         ItemStack blade = new ItemStack(ModItems.RIFTBLADE);
         player.setStackInHand(Hand.MAIN_HAND, blade);
         double oldX = player.getX();
-        ModItems.RIFTBLADE.use(context.getWorld(), player, Hand.MAIN_HAND);
-        context.assertTrue(player.getX() > oldX + 7.7, "Server must actually move the player");
+        var result = ModItems.RIFTBLADE.use(context.getWorld(), player, Hand.MAIN_HAND);
+        context.assertTrue(player.getX() > oldX + 7.7, "Server must actually move the player: result=" + result.getResult()
+                + ", beforeX=" + oldX + ", after=" + player.getPos() + ", yaw=" + player.getYaw());
         context.assertTrue(player.getItemCooldownManager().isCoolingDown(ModItems.RIFTBLADE), "Server cooldown must be active");
         context.assertEquals(blade.getDamage(), 2, "Ability durability cost");
         Vec3d after = player.getPos();
@@ -223,4 +225,56 @@ public final class RiftbornGameTests implements FabricGameTest {
         }
         context.complete();
     }
+
+    @GameTest(templateName = ARENA, tickLimit = 40) public void compassFindsRealNearbyAnchors(TestContext context) {
+        BlockPos anchor = new BlockPos(6, 2, 7);
+        context.setBlockState(anchor, ModBlocks.RIFT_ANCHOR);
+        context.waitAndRun(5, () -> {
+            BlockPos found = RiftCompassItem.locate(context.getWorld(), context.getAbsolutePos(new BlockPos(2, 2, 7)), false);
+            context.assertEquals(found, context.getAbsolutePos(anchor), "Compass should track real anchors through POI storage");
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = ARENA) public void bruteAttacksWithHeavyKnockback(TestContext context) {
+        var brute = context.spawnMob(ModEntities.VOID_BRUTE, 5, 2, 8);
+        brute.setAiDisabled(true);
+        var target = context.spawnMob(EntityType.ZOMBIE, 8, 2, 8);
+        target.setAiDisabled(true);
+        context.assertTrue(brute.tryAttack(target), "Brute melee must deal damage");
+        context.assertTrue(target.getHealth() < 12, "Brute should deal substantial melee damage");
+        context.assertTrue(target.getVelocity().horizontalLengthSquared() > 0.2, "Brute attack must apply knockback");
+        context.complete();
+    }
+
+    @GameTest(templateName = ARENA, tickLimit = 160) public void wispFliesAndShootsFromRange(TestContext context) {
+        var wisp = context.spawnMob(ModEntities.RIFT_WISP, 12, 5, 8);
+        var target = context.spawnMob(EntityType.COW, 6, 2, 8);
+        target.setAiDisabled(true);
+        wisp.setTarget(target);
+        context.waitAndRun(100, () -> {
+            context.assertTrue(target.getHealth() < target.getMaxHealth(), "Wisp AI must fire damaging energy bolts");
+            context.assertTrue(wisp.squaredDistanceTo(target) > 16, "Wisp should keep its distance rather than melee");
+            context.assertTrue(wisp.hasNoGravity(), "Wisp should remain airborne");
+            wisp.discard();
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = ARENA, tickLimit = 160) public void stalkerCanTeleportDuringCombat(TestContext context) {
+        var stalker = context.spawnMob(ModEntities.RIFT_STALKER, 8, 2, 8);
+        var target = context.spawnMob(EntityType.COW, 2, 2, 8);
+        target.setAiDisabled(true);
+        // Hold walking still so this specifically measures the teleport, not pathfinding.
+        stalker.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0);
+        stalker.setTarget(target);
+        Vec3d before = stalker.getPos();
+        context.waitAndRun(125, () -> {
+            double distance = stalker.getPos().squaredDistanceTo(before);
+            context.assertTrue(distance >= 16 && distance <= 40, "Stalker should make a short, collision-checked teleport");
+            stalker.discard();
+            context.complete();
+        });
+    }
+
 }

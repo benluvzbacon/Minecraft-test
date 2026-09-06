@@ -31,7 +31,7 @@ public final class ModEntities {
                     .dimensions(0.25f, 0.25f).maxTrackingRange(8).trackingTickInterval(1));
 
     private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
-        return Registry.register(Registries.ENTITY_TYPE, Riftborn.id(name), builder.build(Riftborn.id(name).toString()));
+        return Registry.register(Registries.ENTITY_TYPE, Riftborn.id(name), builder.build());
     }
 
     public static void initialize() {

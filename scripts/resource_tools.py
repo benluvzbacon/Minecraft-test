@@ -80,4 +80,6 @@ def write_nbt(path, root):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     # mtime=0 makes regeneration byte-for-byte reproducible.
-    path.write_bytes(gzip.compress(b"\x0a\x00\x00" + _payload(10, root), mtime=0))
+    data = bytearray(gzip.compress(b"\x0a\x00\x00" + _payload(10, root), mtime=0))
+    data[9] = 255  # Stable "unknown OS" header across Python 3.11+ and operating systems.
+    path.write_bytes(data)

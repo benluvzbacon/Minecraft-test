@@ -5,6 +5,7 @@ import dev.riftborn.registry.ModBlocks;
 import dev.riftborn.registry.ModEntities;
 import dev.riftborn.registry.ModItems;
 import dev.riftborn.registry.ModParticles;
+import dev.riftborn.registry.ModPointsOfInterest;
 import dev.riftborn.world.RiftWorldgen;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
@@ -26,6 +27,7 @@ public final class Riftborn implements ModInitializer {
         CONFIG = RiftbornConfig.load();
         ModParticles.initialize();
         ModBlocks.initialize();
+        ModPointsOfInterest.initialize();
         ModEntities.initialize();
         ModItems.initialize();
         RiftWorldgen.initialize();

@@ -39,7 +39,9 @@ public final class RiftbladeItem extends SwordItem {
         }
         ServerWorld serverWorld = player.getServerWorld();
         Optional<Vec3d> target = SafeTeleport.findBlinkDestination(serverWorld, player,
-                player.getRotationVec(1.0f), Riftborn.CONFIG.blinkDistance);
+                // Read authoritative body yaw, not interpolated head rotation (which may
+                // still represent the previous tick when a turn and use arrive together).
+                Vec3d.fromPolar(0, player.getYaw()), Riftborn.CONFIG.blinkDistance);
         if (target.isEmpty()) {
             player.sendMessage(Text.translatable("message.riftborn.blink.blocked"), true);
             user.getItemCooldownManager().set(this, 10);

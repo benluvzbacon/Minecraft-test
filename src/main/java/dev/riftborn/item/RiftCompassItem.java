@@ -3,6 +3,7 @@ package dev.riftborn.item;
 import dev.riftborn.Riftborn;
 import dev.riftborn.dimension.RiftDimensions;
 import dev.riftborn.registry.ModParticles;
+import dev.riftborn.registry.ModPointsOfInterest;
 import dev.riftborn.world.RiftWorldgen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -18,10 +19,27 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.Structure;
+import net.minecraft.world.poi.PointOfInterestStorage;
+import java.util.Optional;
+import org.jetbrains.annotations.Nullable;
 
 /** An explicit coordinate/direction locator, not a misleading static custom compass needle. */
 public final class RiftCompassItem extends DescribedItem {
     public RiftCompassItem(Settings settings) { super(settings); }
+
+    @Nullable
+    public static BlockPos locate(ServerWorld world, BlockPos origin, boolean guardian) {
+        Optional<BlockPos> anchor = guardian ? Optional.empty() : world.getPointOfInterestStorage()
+                .getNearestPosition(type -> type.matchesKey(ModPointsOfInterest.ANCHOR), origin, 128,
+                        PointOfInterestStorage.OccupationStatus.ANY);
+        // A nearby loaded portal does not need an expensive unexplored-structure survey.
+        if (anchor.isPresent() && anchor.get().getSquaredDistance(origin) <= 64) return anchor.get();
+        TagKey<Structure> tag = guardian ? RiftWorldgen.GUARDIAN_SHRINES : RiftWorldgen.RIFT_SIGNALS;
+        BlockPos structure = world.locateStructure(tag, origin, Riftborn.CONFIG.locateRadius, false);
+        if (anchor.isPresent() && (structure == null
+                || anchor.get().getSquaredDistance(origin) < structure.getSquaredDistance(origin))) return anchor.get();
+        return structure;
+    }
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
@@ -37,9 +55,8 @@ public final class RiftCompassItem extends DescribedItem {
             return TypedActionResult.fail(stack);
         }
         boolean guardian = inRift && player.isSneaking();
-        TagKey<Structure> tag = guardian ? RiftWorldgen.GUARDIAN_SHRINES : RiftWorldgen.RIFT_SIGNALS;
         ServerWorld serverWorld = player.getServerWorld();
-        BlockPos target = serverWorld.locateStructure(tag, player.getBlockPos(), Riftborn.CONFIG.locateRadius, false);
+        BlockPos target = locate(serverWorld, player.getBlockPos(), guardian);
         if (target == null) {
             player.sendMessage(Text.translatable("message.riftborn.compass.not_found"), false);
             return TypedActionResult.fail(stack);

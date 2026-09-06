@@ -24,7 +24,7 @@ The resource tests cover:
 ./gradlew runGametest
 ```
 
-This boots Fabric's GameTest server and loads the actual dynamic registries and datapacks. Tests include clear-path blinking, solid walls, thin glass panes, headroom, lava, missing footing, authoritative cooldown and durability, recipe-manager crafting, entity attributes, dimension registration, return-point serialization, projectile impact, Guardian phase transition, Heart drops/minion cleanup, and decoding the jigsaw structure templates. Vanilla 1.21.1's GameTest server constructs only its predefined vanilla worlds; the separate normal dedicated-server smoke test verifies Rift world creation, natural structure locating, and cross-dimension travel.
+This boots Fabric's GameTest server and loads the actual dynamic registries and datapacks. Tests include clear-path blinking, solid walls, thin glass panes, headroom, lava, missing footing, authoritative cooldown and durability, recipe-manager crafting, entity attributes, dimension registration, return-point serialization, projectile impact, Stalker teleportation, Brute knockback, Wisp ranged AI, nearby-anchor POI lookup, Guardian phase transition, Heart drops/minion cleanup, and decoding the jigsaw structure templates. Vanilla 1.21.1's GameTest server constructs only its predefined vanilla worlds; the separate normal dedicated-server smoke test verifies Rift world creation, natural structure locating, and cross-dimension travel.
 
 Output: `build/gametest/results.xml` and `build/gametest/logs/latest.log`.
 

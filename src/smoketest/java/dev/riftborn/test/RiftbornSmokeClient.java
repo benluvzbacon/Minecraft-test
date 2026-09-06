@@ -3,6 +3,7 @@ package dev.riftborn.test;
 import dev.riftborn.Riftborn;
 import dev.riftborn.dimension.RiftDimensions;
 import dev.riftborn.registry.ModEntities;
+import dev.riftborn.registry.ModBlocks;
 import dev.riftborn.registry.ModItems;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -65,6 +66,8 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
         switch (stage) {
             case 0 -> {
                 if (client.world.getRegistryKey().equals(World.OVERWORLD)
+                        && client.currentScreen == null && client.player.isOnGround()
+                        && client.world.getBlockState(new BlockPos(0, 100, 0)).isOf(ModBlocks.RIFT_ANCHOR)
                         && client.player.getMainHandStack().isOf(ModItems.RIFT_CORE)
                         && client.player.squaredDistanceTo(0.5, 100, 2.5) < 4) {
                     useBlock(client, new BlockPos(0, 100, 0));

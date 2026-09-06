@@ -98,7 +98,11 @@ loom {
 tasks.named('runServer') { standardInput = System.in }
 tasks.named('runSmokeServer') { standardInput = System.in }
 tasks.named('runGametest') {
-    doFirst { file('build/gametest').mkdirs() }
+    doFirst {
+        file('build/gametest').mkdirs()
+        file('build/gametest/server.properties').text = '# Isolated GameTest instance\nonline-mode=false\n'
+        file('build/gametest/eula.txt').text = 'eula=true\n'
+    }
 }
 tasks.named('check') { dependsOn 'compileGametestJava', 'compileSmoketestJava' }
 
@@ -106,4 +110,9 @@ tasks.named('check') { dependsOn 'compileGametestJava', 'compileSmoketestJava' }
 tasks.withType(AbstractArchiveTask).configureEach {
     preserveFileTimestamps = false
     reproducibleFileOrder = true
+}
+
+// Split client source sets need no extra resources, but Loom lists this path at launch.
+tasks.named('clientClasses') {
+    doLast { sourceSets.client.output.resourcesDir.mkdirs() }
 }

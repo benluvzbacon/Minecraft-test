@@ -60,6 +60,8 @@ def main():
         for cmd in [
             "gamerule doMobSpawning false", "gamerule doWeatherCycle false", "gamerule doDaylightCycle false",
             "gamerule keepInventory true", "gamerule spawnChunkRadius 0", "time set day",
+            "forceload add -16 -16 16 16",
+            "execute in riftborn:the_rift run forceload add -16 -16 48 64",
             "fill -6 99 -6 6 99 6 minecraft:stone", "fill -6 100 -6 6 106 6 minecraft:air",
             "setblock 0 100 0 riftborn:rift_anchor[open=false]", "setworldspawn 0 100 2",
             "execute in riftborn:the_rift run place template riftborn:guardian_shrine 0 140 0",
