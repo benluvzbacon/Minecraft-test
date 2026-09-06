@@ -1,0 +1,11 @@
+{
+  "type": "riftborn:rift_surface",
+  "biomes": "#riftborn:has_structure/awakening/broken_temple",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "beard_thin",
+  "start_pool": "riftborn:awakening/broken_temple",
+  "size": 1,
+  "surface_search_radius": 64,
+  "circular_footprint": false
+}

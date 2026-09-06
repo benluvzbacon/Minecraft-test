@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CTC",
+    "HSH",
+    "CRC"
+  ],
+  "key": {
+    "C": {
+      "item": "riftborn:abyssal_crystal"
+    },
+    "T": {
+      "item": "riftborn:titan_core"
+    },
+    "H": {
+      "item": "riftborn:rift_heart"
+    },
+    "S": {
+      "item": "riftborn:sovereign_heart"
+    },
+    "R": {
+      "item": "riftborn:reality_spindle"
+    }
+  },
+  "result": {
+    "id": "riftborn:heart_of_the_rift",
+    "count": 1
+  }
+}

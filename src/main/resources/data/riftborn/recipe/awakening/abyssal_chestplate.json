@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "riftborn:abyssal_schematic"
+  },
+  "base": {
+    "item": "riftborn:rift_chestplate"
+  },
+  "addition": {
+    "item": "riftborn:abyssal_core"
+  },
+  "result": {
+    "id": "riftborn:abyssal_chestplate",
+    "count": 1
+  }
+}

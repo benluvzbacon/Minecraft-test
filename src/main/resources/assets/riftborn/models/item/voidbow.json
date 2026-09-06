@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:item/bow",
+  "textures": {
+    "layer0": "riftborn:item/voidbow"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "riftborn:pulling": 1
+      },
+      "model": "riftborn:item/voidbow_pulling_0"
+    },
+    {
+      "predicate": {
+        "riftborn:pulling": 1,
+        "riftborn:pull": 0.65
+      },
+      "model": "riftborn:item/voidbow_pulling_1"
+    },
+    {
+      "predicate": {
+        "riftborn:pulling": 1,
+        "riftborn:pull": 0.9
+      },
+      "model": "riftborn:item/voidbow_pulling_2"
+    }
+  ]
+}

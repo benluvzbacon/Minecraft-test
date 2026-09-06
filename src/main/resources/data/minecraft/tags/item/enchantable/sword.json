@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "riftborn:riftblade"
+    "riftborn:riftblade",
+    "riftborn:abyssal_greatblade"
   ]
 }

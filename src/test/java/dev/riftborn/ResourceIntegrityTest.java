@@ -118,6 +118,7 @@ class ResourceIntegrityTest {
 
     @Test void structuresHaveValidPalettesLootAndLimitedMobs() throws IOException {
         for (Path path : files(DATA.resolve("structure"), ".nbt")) {
+            if (path.getParent().getFileName().toString().equals("awakening")) continue; // Covered by AwakeningResourceTest.
             Map<?, ?> template;
             try (var input = new DataInputStream(new GZIPInputStream(Files.newInputStream(path)))) {
                 assertEquals(10, input.readUnsignedByte());
@@ -192,7 +193,7 @@ class ResourceIntegrityTest {
         }
     }
 
-    private static Object readTag(DataInputStream in, int type) throws IOException {
+    static Object readTag(DataInputStream in, int type) throws IOException {
         return switch (type) {
             case 1 -> in.readByte();
             case 3 -> in.readInt();

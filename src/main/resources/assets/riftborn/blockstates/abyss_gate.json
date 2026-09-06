@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "active=true": {
+      "model": "riftborn:block/abyss_gate"
+    },
+    "active=false": {
+      "model": "riftborn:block/abyss_gate"
+    }
+  }
+}

@@ -28,6 +28,9 @@ jobs:
           python3 scripts/generate_assets.py
           python3 scripts/generate_data.py
           python3 scripts/generate_structures.py
+          python3 scripts/generate_awakening.py
+          python3 scripts/generate_awakening_assets.py
+          python3 scripts/generate_awakening_structures.py
           git diff --exit-code -- src/main/resources src/gametest/resources
       - name: Compile, check resources, and build distributable
         id: build

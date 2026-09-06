@@ -1,0 +1,24 @@
+{
+  "parent": "riftborn:awakening/colossal",
+  "display": {
+    "icon": {
+      "id": "riftborn:reality_spindle"
+    },
+    "title": "Reality Breaker",
+    "description": "Defeat the Rift Architect.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "awakened": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "awakened"
+    ]
+  ]
+}

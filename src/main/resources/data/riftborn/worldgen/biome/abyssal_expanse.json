@@ -1,0 +1,89 @@
+{
+  "has_precipitation": false,
+  "temperature": 0.1,
+  "downfall": 0,
+  "effects": {
+    "fog_color": 465960,
+    "sky_color": 333087,
+    "water_color": 3587010,
+    "water_fog_color": 1063752,
+    "foliage_color": 7069126,
+    "grass_color": 1526352,
+    "particle": {
+      "options": {
+        "type": "riftborn:abyss_mote"
+      },
+      "probability": 0.002
+    },
+    "mood_sound": {
+      "sound": "minecraft:ambient.basalt_deltas.mood",
+      "tick_delay": 8000,
+      "block_search_extent": 8,
+      "offset": 2
+    }
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "riftborn:abyss_stalker",
+        "weight": 40,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "riftborn:void_reaver",
+        "weight": 26,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "riftborn:abyssal_brute",
+        "weight": 9,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "riftborn:rift_echo",
+        "weight": 18,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "riftborn:abyssal_warden",
+        "weight": 6,
+        "minCount": 1,
+        "maxCount": 1
+      }
+    ],
+    "creature": [],
+    "ambient": [],
+    "axolotls": [],
+    "underground_water_creature": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "carvers": {},
+  "features": [
+    [],
+    [],
+    [
+      "riftborn:awakening/crystal_spires"
+    ],
+    [],
+    [],
+    [],
+    [
+      "riftborn:awakening/abyss_ore"
+    ],
+    [],
+    [],
+    [
+      "riftborn:awakening/echo_ferns",
+      "riftborn:awakening/ashen_reeds",
+      "riftborn:awakening/brambles"
+    ],
+    []
+  ]
+}

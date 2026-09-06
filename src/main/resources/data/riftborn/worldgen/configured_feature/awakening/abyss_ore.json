@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:ore",
+  "config": {
+    "size": 7,
+    "discard_chance_on_air_exposure": 0.2,
+    "targets": [
+      {
+        "target": {
+          "predicate_type": "minecraft:block_match",
+          "block": "riftborn:abyssal_stone"
+        },
+        "state": {
+          "Name": "riftborn:abyssal_crystal_ore"
+        }
+      }
+    ]
+  }
+}

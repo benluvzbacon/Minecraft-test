@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CEC",
+    "TRS",
+    "CEC"
+  ],
+  "key": {
+    "C": {
+      "item": "riftborn:abyssal_crystal"
+    },
+    "E": {
+      "item": "riftborn:abyssal_essence"
+    },
+    "T": {
+      "item": "riftborn:titan_core"
+    },
+    "R": {
+      "item": "riftborn:abyssal_core"
+    },
+    "S": {
+      "item": "riftborn:reality_spindle"
+    }
+  },
+  "result": {
+    "id": "riftborn:collapse_catalyst",
+    "count": 1
+  }
+}

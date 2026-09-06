@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "riftborn:abyssal_shard"
+    },
+    {
+      "item": "riftborn:abyssal_shard"
+    },
+    {
+      "item": "riftborn:abyssal_shard"
+    },
+    {
+      "item": "riftborn:abyssal_shard"
+    },
+    {
+      "item": "riftborn:rift_dust"
+    }
+  ],
+  "result": {
+    "id": "riftborn:abyssal_crystal",
+    "count": 1
+  }
+}

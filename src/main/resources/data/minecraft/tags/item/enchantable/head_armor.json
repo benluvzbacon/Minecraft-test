@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "riftborn:rift_helmet"
+    "riftborn:rift_helmet",
+    "riftborn:abyssal_helmet"
   ]
 }

@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "riftborn:rift_leggings"
+    "riftborn:rift_leggings",
+    "riftborn:abyssal_leggings"
   ]
 }

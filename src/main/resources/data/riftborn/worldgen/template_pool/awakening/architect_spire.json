@@ -1,0 +1,15 @@
+{
+  "name": "riftborn:awakening/architect_spire",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "riftborn:awakening/architect_spire",
+        "processors": "minecraft:empty",
+        "projection": "rigid"
+      }
+    }
+  ]
+}

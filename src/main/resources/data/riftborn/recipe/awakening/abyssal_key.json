@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CHC",
+    "FSF",
+    "CHC"
+  ],
+  "key": {
+    "C": {
+      "item": "riftborn:rift_core"
+    },
+    "H": {
+      "item": "riftborn:rift_heart"
+    },
+    "F": {
+      "item": "riftborn:void_fragment"
+    },
+    "S": {
+      "item": "riftborn:resonant_sigil"
+    }
+  },
+  "result": {
+    "id": "riftborn:abyssal_key",
+    "count": 1
+  }
+}

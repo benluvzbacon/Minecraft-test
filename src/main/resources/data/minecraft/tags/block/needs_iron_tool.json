@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "riftborn:rift_stone"
+    "riftborn:rift_stone",
+    "riftborn:abyssal_stone",
+    "riftborn:luminous_shale"
   ]
 }
