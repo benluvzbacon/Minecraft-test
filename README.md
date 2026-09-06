@@ -51,7 +51,7 @@ Build it yourself as described below, or download the **`riftborn-1.21.1`** arti
 
 **Use any Rift Anchor in The Rift with an empty hand.** Return trips require no Core and lead to your own saved Overworld entry anchor, not another player's. Your return location survives disconnects and server restarts. A safe arrival platform and return anchor are created once on your first entry; they are not rebuilt over player builds on every visit.
 
-Dismount before crossing, and allow the normal portal cooldown to settle between trips. Travel checks for collision-free footing. If your original landing is obstructed, the mod attempts a safe landing near Overworld spawn instead. Beds and respawn anchors **do not work in The Rift**—beds can explode. Death otherwise follows normal Minecraft rules.
+Dismount before crossing, and allow the normal portal cooldown to settle between trips. Travel checks for collision-free footing. If your original landing is obstructed, the mod attempts a safe landing near Overworld spawn instead. Beds and charged respawn anchors **explode in The Rift**; they cannot set your respawn point here. Death otherwise follows normal Minecraft rules.
 
 ### Recipes
 
@@ -115,7 +115,7 @@ Other useful commands:
 ./gradlew clean build     # full clean rebuild
 ```
 
-See [docs/TESTING.md](docs/TESTING.md) for the headless multiplayer test, CI details, and verification scope.
+See [docs/TESTING.md](docs/TESTING.md) for the headless multiplayer test, CI details, and verification scope. The [1.0.0 verification record](docs/VERIFICATION.md) includes the successful run, test counts, and distributable checksum.
 
 ### Configuration
 
@@ -171,4 +171,4 @@ The generators use only Python's standard library and fixed seeds. Textures and 
 
 ## License
 
-Riftborn code, generated textures, and structure designs are available under the [MIT License](LICENSE). Minecraft and its assets belong to Mojang/Microsoft and are not included in this repository. Riftborn is an independent, unofficial mod, not an official Minecraft product.
+Riftborn code, generated textures, and structure designs are available under the [MIT License](LICENSE). Minecraft and the vanilla graphics shown in the documentation screenshot belong to Mojang/Microsoft. Riftborn is an independent, unofficial mod, not an official Minecraft product.
