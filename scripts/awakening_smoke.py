@@ -32,8 +32,10 @@ class AwakeningScenario:
             self.cmd('riftborn_awake entry','execute in riftborn:the_abyss run forceload add -32 -32 48 48','execute in riftborn:the_abyss run fill -24 324 -24 24 324 24 riftborn:abyssal_stone','execute in riftborn:the_abyss run setblock 0 325 -5 riftborn:abyss_gate[active=true]','execute in riftborn:the_abyss run tp RiftbornTester 0.5 325 -5.5 0 -6','effect give RiftbornTester minecraft:resistance 999 4 true')
             for x,mob,y in [(-14,'abyss_stalker',325),(-7,'void_reaver',328),(0,'abyssal_brute',325),(7,'rift_echo',325),(14,'abyssal_warden',325)]:self.cmd(f'execute in riftborn:the_abyss run summon riftborn:{mob} {x} {y} 12 {{NoAI:1b,Silent:1b,PersistenceRequired:1b,Tags:["awakening_display"]}}')
             self.armor('abyssal')
+        if 'RIFTBORN_20_DASH_VERIFIED' in line:self.cmd('riftborn_awake dash')
+        if 'RIFTBORN_20_VISTA_REQUEST' in line:self.cmd('riftborn_awake vista')
         if 'RIFTBORN_20_DASH_OK' in line:
-            self.cmd('riftborn_awake dash','execute in riftborn:the_abyss run tp RiftbornTester 0.5 325 0.5 -90 0','execute in riftborn:the_abyss run summon riftborn:abyssal_brute 4.5 325 0.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b,Tags:["awakening_weapon"]}')
+            self.cmd('execute in riftborn:the_abyss run tp RiftbornTester 0.5 325 0.5 -90 0','execute in riftborn:the_abyss run summon riftborn:abyssal_brute 4.5 325 0.5 {NoAI:1b,Silent:1b,PersistenceRequired:1b,Tags:["awakening_weapon"]}')
             self.hand('riftborn:abyssal_greatblade')
         if 'RIFTBORN_20_GREATBLADE_OK' in line:self.cmd('riftborn_awake weapon','give RiftbornTester riftborn:abyssal_shard 12');self.target(8.5);self.hand('riftborn:voidbow')
         if 'RIFTBORN_20_VOIDBOW_OK' in line:self.cmd('riftborn_awake weapon','give RiftbornTester riftborn:abyssal_essence 24');self.hand('riftborn:rift_staff')

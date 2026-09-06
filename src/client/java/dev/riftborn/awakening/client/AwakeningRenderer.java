@@ -30,7 +30,7 @@ public final class AwakeningRenderer<T extends AbyssHostileEntity> extends MobEn
     }
     @Override
     protected int getBlockLight(T e, BlockPos p) {
-        return kind == 7 && e.visualState() >= 3 ? 15 : super.getBlockLight(e, p);
+        return kind == 7 && e.visualState() >= 3 ? 15 : Math.max(9, super.getBlockLight(e, p));
     }
     @Override
     protected void scale(T e, MatrixStack matrices, float delta) {

@@ -29,6 +29,7 @@ import net.minecraft.world.gen.structure.Structure;
 public final class AwakeningWorldTests {
     private static final Queue<Consumer<MinecraftServer>> TASKS = new ArrayDeque<>();
     private static int audited;
+    private static final Map<String, BlockBox> SITES = new HashMap<>();
     private static void require(boolean b, String message) {
         if (!b)
             throw new IllegalStateException("RIFTBORN_SMOKE_FAILURE: " + message);
@@ -67,6 +68,7 @@ public final class AwakeningWorldTests {
         var structure = chunk.getStructureStart(entry.value());
         require(structure != null && structure.hasChildren(), "Natural start exists " + name);
         var box = structure.getChildren().getFirst().getBoundingBox();
+        SITES.put(name, box);
         for (int x = box.getMinX() >> 4; x <= box.getMaxX() >> 4; x++)
             for (int z = box.getMinZ() >> 4; z <= box.getMaxZ() >> 4; z++) w.getChunk(x, z);
         var floor = new BlockPos(box.getCenter().getX(), box.getMinY(), box.getCenter().getZ());
@@ -138,6 +140,15 @@ public final class AwakeningWorldTests {
                     require(audited == 10, "Every new structure generated");
                     Riftborn.LOGGER.info("RIFTBORN_20_WORLD_AUDIT_OK");
                 });
+            }
+            case "vista" -> {
+                var box = SITES.get("abyssal_fortress");
+                require(box != null, "Audited natural fortress available");
+                var destination = server.getWorld(AbyssWorlds.ABYSS);
+                var pos = new Vec3d(box.getCenter().getX() + 0.5, box.getMaxY() + 20, box.getMaxZ() + 28.5);
+                destination.getChunk(BlockPos.ofFloored(pos));
+                p.teleportTo(new net.minecraft.world.TeleportTarget(destination, pos, Vec3d.ZERO, 180, 25,
+                        net.minecraft.world.TeleportTarget.ADD_PORTAL_CHUNK_TICKET));
             }
             case "key" -> {
                 require(state.has(p.getUuid(), AwakeningState.TEMPLE), "Puzzle completed before key");

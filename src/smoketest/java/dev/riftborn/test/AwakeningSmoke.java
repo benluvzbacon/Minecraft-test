@@ -85,6 +85,8 @@ public final class AwakeningSmoke {
                 c.player == null ? "none" : c.player.getPos());
         if (c.world == null || c.player == null || c.interactionManager == null)
             return;
+        c.getToastManager().clear();
+        c.inGameHud.getChatHud().clear(false);
         boolean abyss = c.world.getRegistryKey().equals(AbyssWorlds.ABYSS);
         switch (stage) {
             case 0 -> {
@@ -176,6 +178,7 @@ public final class AwakeningSmoke {
                     require(c.player.getItemCooldownManager().isCoolingDown(AbyssItems.ABYSSAL_BOOTS),
                         "Server synchronizes dash cooldown");
                     after = c.player.getPos();
+                    marker("RIFTBORN_20_DASH_VERIFIED");
                     AwakeningClient.requestDash(c);
                     next(10);
                 }
@@ -193,19 +196,21 @@ public final class AwakeningSmoke {
                     photo(c, "abyssal-ascension");
                     c.options.setPerspective(Perspective.FIRST_PERSON);
                     c.options.hudHidden = false;
-                    marker("RIFTBORN_20_DASH_OK");
-                    next(12);
+                    marker("RIFTBORN_20_VISTA_REQUEST");
+                    next(44);
                 }
             }
             case 12 -> {
                 if (c.player.getMainHandStack().isOf(AbyssItems.GREATBLADE)
                     && c.player.squaredDistanceTo(0.5, 325, 0.5) < 2 && age() > 15) {
+                    c.options.useKey.setPressed(true);
                     use(c);
                     next(13);
                 }
             }
             case 13 -> {
                 if (age() > 25) {
+                    c.options.useKey.setPressed(false);
                     c.interactionManager.stopUsingItem(c.player);
                     next(14);
                 }
@@ -221,6 +226,7 @@ public final class AwakeningSmoke {
             }
             case 15 -> {
                 if (c.player.getMainHandStack().isOf(AbyssItems.VOIDBOW) && age() > 15) {
+                    c.options.useKey.setPressed(true);
                     use(c);
                     next(16);
                 }
@@ -228,6 +234,7 @@ public final class AwakeningSmoke {
             case 16 -> {
                 if (age() > 25) {
                     photo(c, "voidbow-draw");
+                    c.options.useKey.setPressed(false);
                     c.interactionManager.stopUsingItem(c.player);
                     next(17);
                 }
@@ -404,6 +411,13 @@ public final class AwakeningSmoke {
                 if (abyss && c.currentScreen == null) {
                     marker("RIFTBORN_20_ATTUNEMENT_OK");
                     next(43);
+                }
+            }
+            case 44 -> {
+                if (abyss && c.currentScreen == null && age() > 100) {
+                    photo(c, "abyss-fortress-natural");
+                    marker("RIFTBORN_20_DASH_OK");
+                    next(12);
                 }
             }
             case 43 -> {
