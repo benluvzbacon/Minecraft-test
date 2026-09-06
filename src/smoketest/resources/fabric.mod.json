@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "riftborn_smoketest",
+  "version": "2.1.0",
+  "name": "Riftborn Smoke Client",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.riftborn.test.RiftbornSmokeClient"
+    ]
+  },
+  "depends": {
+    "riftborn": "*"
+  }
+}

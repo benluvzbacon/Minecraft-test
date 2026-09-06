@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "verse=0": {
+      "model": "riftborn:block/ancient_stele"
+    },
+    "verse=1": {
+      "model": "riftborn:block/ancient_stele"
+    },
+    "verse=2": {
+      "model": "riftborn:block/ancient_stele"
+    },
+    "verse=3": {
+      "model": "riftborn:block/ancient_stele"
+    },
+    "verse=4": {
+      "model": "riftborn:block/ancient_stele"
+    },
+    "verse=5": {
+      "model": "riftborn:block/ancient_stele"
+    },
+    "verse=6": {
+      "model": "riftborn:block/ancient_stele"
+    },
+    "verse=7": {
+      "model": "riftborn:block/ancient_stele"
+    }
+  }
+}

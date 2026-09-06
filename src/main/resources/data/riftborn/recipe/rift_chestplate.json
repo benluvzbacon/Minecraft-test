@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "FCF",
+    "FHF",
+    "FFF"
+  ],
+  "key": {
+    "F": {
+      "item": "riftborn:void_fragment"
+    },
+    "C": {
+      "item": "riftborn:rift_core"
+    },
+    "H": {
+      "item": "riftborn:rift_heart"
+    }
+  },
+  "result": {
+    "id": "riftborn:rift_chestplate",
+    "count": 1
+  }
+}

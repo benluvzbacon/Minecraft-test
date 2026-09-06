@@ -1,0 +1,11 @@
+{
+  "type": "riftborn:the_abyss",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "riftborn:the_abyss",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "riftborn:abyssal_expanse"
+    }
+  }
+}

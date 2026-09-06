@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "riftborn:block/rift_anchor"
+    },
+    "open=true": {
+      "model": "riftborn:block/rift_anchor_open"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:awakening/abyss_sky_ruins",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 5200121,
+    "spacing": 20,
+    "separation": 8,
+    "spread_type": "linear"
+  }
+}

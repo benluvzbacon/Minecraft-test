@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CEC",
+    "CBC",
+    "CEC"
+  ],
+  "key": {
+    "C": {
+      "item": "riftborn:abyssal_crystal"
+    },
+    "E": {
+      "item": "riftborn:abyssal_essence"
+    },
+    "B": {
+      "item": "minecraft:bow"
+    }
+  },
+  "result": {
+    "id": "riftborn:voidbow",
+    "count": 1
+  }
+}

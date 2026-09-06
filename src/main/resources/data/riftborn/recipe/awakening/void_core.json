@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CGC",
+    "GRG",
+    "CGC"
+  ],
+  "key": {
+    "C": {
+      "item": "riftborn:abyssal_crystal"
+    },
+    "G": {
+      "item": "riftborn:stormglass"
+    },
+    "R": {
+      "item": "riftborn:abyssal_core"
+    }
+  },
+  "result": {
+    "id": "riftborn:void_core",
+    "count": 1
+  }
+}

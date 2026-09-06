@@ -1,0 +1,24 @@
+{
+  "parent": "riftborn:awakening/abyssal_ascension",
+  "display": {
+    "icon": {
+      "id": "riftborn:titan_core"
+    },
+    "title": "Colossal",
+    "description": "Defeat the Abyssal Colossus.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "awakened": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "awakened"
+    ]
+  ]
+}

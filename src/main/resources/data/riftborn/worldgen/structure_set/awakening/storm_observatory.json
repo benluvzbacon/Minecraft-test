@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:awakening/storm_observatory",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 5200149,
+    "spacing": 48,
+    "separation": 18,
+    "spread_type": "linear"
+  }
+}

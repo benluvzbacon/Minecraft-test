@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "riftborn:abyssal_crystal_block"
+    }
+  ],
+  "result": {
+    "id": "riftborn:abyssal_crystal",
+    "count": 9
+  }
+}

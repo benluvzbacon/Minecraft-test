@@ -1,0 +1,1 @@
+{"required":true,"package":"dev.riftborn.mixin","compatibilityLevel":"JAVA_21","client":["FlightSmoothingMixin"],"injectors":{"defaultRequire":1}}

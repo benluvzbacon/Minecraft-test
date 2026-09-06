@@ -1,0 +1,15 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:awakening/architect_spire",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 5200137,
+    "spacing": 36,
+    "separation": 14,
+    "spread_type": "linear"
+  }
+}

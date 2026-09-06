@@ -1,0 +1,24 @@
+{
+  "parent": "riftborn:awakening/sovereign_slayer",
+  "display": {
+    "icon": {
+      "id": "riftborn:heart_of_the_rift"
+    },
+    "title": "Rift Master",
+    "description": "Complete the major Riftborn progression.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "awakened": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "awakened"
+    ]
+  ]
+}

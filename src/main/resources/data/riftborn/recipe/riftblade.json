@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " H ",
+    " F ",
+    " C "
+  ],
+  "key": {
+    "H": {
+      "item": "riftborn:rift_heart"
+    },
+    "F": {
+      "item": "riftborn:void_fragment"
+    },
+    "C": {
+      "item": "riftborn:rift_core"
+    }
+  },
+  "result": {
+    "id": "riftborn:riftblade",
+    "count": 1
+  }
+}

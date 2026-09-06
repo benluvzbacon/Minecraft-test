@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "riftborn",
+  "version": "${version}",
+  "name": "Riftborn",
+  "description": "The Rift Awakening: descend into The Abyss, uncover the Guardian's secret, and challenge the Abyss Sovereign.",
+  "authors": [
+    "Riftborn contributors"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.riftborn.Riftborn"
+    ],
+    "client": [
+      "dev.riftborn.client.RiftbornClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": ">=0.116.6+1.21.1"
+  },
+  "icon": "assets/riftborn/icon.png",
+  "mixins": [
+    "riftborn.mixins.json",
+    {
+      "config": "riftborn.client.mixins.json",
+      "environment": "client"
+    }
+  ]
+}

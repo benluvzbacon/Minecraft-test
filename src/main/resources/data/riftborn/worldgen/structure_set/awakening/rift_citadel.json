@@ -1,0 +1,19 @@
+{
+  "structures": [
+    {
+      "structure": "riftborn:awakening/rift_citadel",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 5200101,
+    "spacing": 34,
+    "separation": 12,
+    "spread_type": "linear",
+    "exclusion_zone": {
+      "other_set": "riftborn:rift_ruin",
+      "chunk_count": 3
+    }
+  }
+}

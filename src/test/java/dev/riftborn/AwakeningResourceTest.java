@@ -1,0 +1,116 @@
+package dev.riftborn;
+import com.google.gson.*;
+import org.junit.jupiter.api.Test;
+import java.nio.file.*;
+import java.util.*;
+import java.io.*;
+import java.util.zip.GZIPInputStream;
+import static org.junit.jupiter.api.Assertions.*;
+class AwakeningResourceTest {
+    static final Path ROOT = Path.of("src/main/resources"), DATA = ROOT.resolve("data/riftborn"),
+                      ASSETS = ROOT.resolve("assets/riftborn");
+    static final List<String> MOBS = List.of("abyss_stalker", "void_reaver", "abyssal_brute", "rift_echo",
+        "abyssal_warden", "abyssal_colossus", "rift_architect", "abyss_sovereign", "collapse_herald");
+    static final List<String> STRUCTURES =
+        List.of("rift_citadel", "broken_temple", "sky_ruins", "abyssal_fortress", "forgotten_laboratory",
+            "abyss_sky_ruins", "colossus_arena", "architect_spire", "sovereign_arena", "storm_observatory");
+    static JsonObject read(Path p) throws IOException {
+        return JsonParser.parseString(Files.readString(p)).getAsJsonObject();
+    }
+    @Test
+    void everyNewMobHasArtLootAndTranslation() throws Exception {
+        var lang = read(ASSETS.resolve("lang/en_us.json"));
+        for (String mob : MOBS) {
+            assertTrue(lang.has("entity.riftborn." + mob));
+            assertTrue(Files.isRegularFile(ASSETS.resolve("textures/entity/awakening/" + mob + ".png")));
+            assertTrue(Files.isRegularFile(ASSETS.resolve("models/item/" + mob + "_spawn_egg.json")));
+            assertTrue(Files.isRegularFile(DATA.resolve("loot_table/entities/" + mob + ".json")));
+        }
+    }
+    @Test
+    void abyssUsesDifferentTallThreeDimensionalTerrain() throws Exception {
+        var settings = read(DATA.resolve("worldgen/noise_settings/the_abyss.json"));
+        assertEquals(384, settings.getAsJsonObject("noise").get("height").getAsInt());
+        assertEquals("riftborn:abyssal_stone", settings.getAsJsonObject("default_block").get("Name").getAsString());
+        String density = Files.readString(DATA.resolve("worldgen/density_function/awakening/abyss_hollows.json"));
+        assertTrue(density.contains("minecraft:max"));
+        assertTrue(density.contains("minecraft:range_choice"));
+        assertTrue(density.contains("abyss_caves"));
+        assertNotEquals(Files.readString(DATA.resolve("dimension/the_rift.json")),
+            Files.readString(DATA.resolve("dimension/the_abyss.json")));
+    }
+    @Test
+    void entryKeyRequiresGuardianHeartsAndTempleSigil() throws Exception {
+        var key = read(DATA.resolve("recipe/awakening/abyssal_key.json")).getAsJsonObject("key");
+        assertEquals("riftborn:rift_heart", key.getAsJsonObject("H").get("item").getAsString());
+        assertEquals("riftborn:resonant_sigil", key.getAsJsonObject("S").get("item").getAsString());
+        assertFalse(Files.readString(DATA.resolve("recipe/awakening/abyssal_key.json")).contains("abyssal_crystal"));
+    }
+    @Test
+    void armorUsesSmithingAndRetainsTheRiftBase() throws Exception {
+        for (String piece : List.of("helmet", "chestplate", "leggings", "boots")) {
+            var recipe = read(DATA.resolve("recipe/awakening/abyssal_" + piece + ".json"));
+            assertEquals("minecraft:smithing_transform", recipe.get("type").getAsString());
+            assertEquals("riftborn:rift_" + piece, recipe.getAsJsonObject("base").get("item").getAsString());
+            assertTrue(Files.isRegularFile(ASSETS.resolve("models/item/abyssal_" + piece + ".json")));
+        }
+        for (int layer : List.of(1, 2))
+            assertTrue(Files.isRegularFile(ASSETS.resolve("textures/models/armor/abyssal_layer_" + layer + ".png")));
+    }
+    @Test
+    void progressionLootIsBossExclusiveNotChestLoot() throws Exception {
+        String[] bosses = {"abyssal_colossus", "rift_architect", "abyss_sovereign", "collapse_herald"};
+        String[] rewards = {"titan_core", "reality_spindle", "sovereign_heart", "sovereign_sigil"};
+        for (int i = 0; i < bosses.length; i++)
+            assertTrue(Files.readString(DATA.resolve("loot_table/entities/" + bosses[i] + ".json"))
+                    .contains("riftborn:" + rewards[i]));
+        for (String structure : STRUCTURES) {
+            String loot = Files.readString(DATA.resolve("loot_table/chests/awakening/" + structure + ".json"));
+            for (String reward : rewards) assertFalse(loot.contains("riftborn:" + reward));
+        }
+    }
+    @Test
+    void everyArenaAndExplorationStructureHasValidBoundedContents() throws Exception {
+        for (String name : STRUCTURES) {
+            Path p = DATA.resolve("structure/awakening/" + name + ".nbt");
+            Map<?, ?> nbt;
+            try (var input = new DataInputStream(new GZIPInputStream(Files.newInputStream(p)))) {
+                assertEquals(10, input.readUnsignedByte());
+                input.readUTF();nbt=(Map<?,?>)ResourceIntegrityTest.readTag(input,10);
+            }
+            var size = (List<?>) nbt.get("size");
+            assertTrue((int) size.get(0) >= 25 && (int) size.get(0) <= 81);
+            var entities = (List<?>) nbt.get("entities");
+            assertTrue(entities.size() >= 2 && entities.size() <= 6);
+            var palette = (List<?>) nbt.get("palette");
+            var names = new HashSet<String>();
+            for (Object state : palette)names.add((String)((Map<?,?>)state).get("Name"));
+            assertTrue(names.contains("riftborn:ancient_stele"));
+            assertTrue(names.contains("minecraft:chest"));
+            var occupied = new HashSet<List<?>>();
+            for (Object b : (List<?>) nbt.get("blocks")) {var block=(Map<?,?>)b;
+                var pos = (List<?>) block.get("pos");
+                assertTrue(occupied.add(pos));
+                for (int i = 0; i < 3; i++) assertTrue((int) pos.get(i) >= 0 && (int) pos.get(i) < (int) size.get(i));
+                assertTrue((int) block.get("state") < palette.size());
+            }
+            var config = read(DATA.resolve("worldgen/structure/awakening/" + name + ".json"));
+            assertEquals("riftborn:rift_surface", config.get("type").getAsString());
+            assertTrue(config.get("surface_search_radius").getAsInt() <= 64);
+        }
+    }
+    @Test
+    void allAdvancementParentsResolve() throws Exception {
+        try (var files = Files.walk(DATA.resolve("advancement/awakening"))) {
+            for (Path p : files.filter(p -> p.toString().endsWith(".json")).toList()) {
+                var json = read(p);
+                if (json.has("parent")) {
+                    String parent = json.get("parent").getAsString();
+                    if (parent.startsWith("riftborn:"))
+                        assertTrue(
+                            Files.exists(DATA.resolve("advancement/" + parent.substring(9) + ".json")), p.toString());
+                }
+            }
+        }
+    }
+}

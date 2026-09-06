@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CSC",
+    " R ",
+    " B "
+  ],
+  "key": {
+    "C": {
+      "item": "riftborn:abyssal_crystal"
+    },
+    "S": {
+      "item": "riftborn:reality_spindle"
+    },
+    "R": {
+      "item": "riftborn:abyssal_core"
+    },
+    "B": {
+      "item": "minecraft:blaze_rod"
+    }
+  },
+  "result": {
+    "id": "riftborn:rift_staff",
+    "count": 1
+  }
+}

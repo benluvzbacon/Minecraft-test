@@ -1,0 +1,22 @@
+# Gradle / Loom / Minecraft development data
+.gradle/
+build/
+run/
+logs/
+*.log
+# Editor and platform files
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+# Local tooling, captures and downloaded references
+.arena/
+.local/
+__pycache__/
+*.hprof
+
+# Verified downloads supplied alongside the source checkout
+artifacts/
