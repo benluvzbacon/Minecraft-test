@@ -253,7 +253,7 @@ public final class AwakeningSmoke {
                 }
             }
             case 19 -> {
-                if (age() > 18) {
+                if (age() > 18 && !c.player.getItemCooldownManager().isCoolingDown(AbyssItems.RIFT_STAFF)) {
                     require(c.player.getMainHandStack().getDamage() >= 1, "Staff lance costs durability");
                     marker("RIFTBORN_20_STAFF_LANCE_OK");
                     cycle(c);
@@ -268,7 +268,7 @@ public final class AwakeningSmoke {
                 }
             }
             case 21 -> {
-                if (age() > 20) {
+                if (age() > 20 && !c.player.getItemCooldownManager().isCoolingDown(AbyssItems.RIFT_STAFF)) {
                     require(c.player.getMainHandStack().getDamage() >= 3, "Staff pulse uses the second ability");
                     marker("RIFTBORN_20_STAFF_PULSE_OK");
                     cycle(c);

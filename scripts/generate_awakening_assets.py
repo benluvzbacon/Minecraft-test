@@ -124,7 +124,7 @@ def armor():
 def entities():
     for i,name in enumerate(MOBS):
         im=Image(128,128);r=random.Random(2400+i)
-        base=(18,41,49) if name not in ['rift_echo','rift_architect'] else (39,32,64)
+        base=(30,68,79) if name not in ['rift_echo','rift_architect'] else (53,45,83)
         for y in range(128):
             for x in range(128):
                 n=r.randrange(-5,6);color=tuple(c+n for c in base)

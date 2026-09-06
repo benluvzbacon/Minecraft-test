@@ -42,6 +42,8 @@ public final class AbyssParticle extends SpriteBillboardParticle {
         @Override
         public Particle createParticle(
             SimpleParticleType t, ClientWorld w, double x, double y, double z, double vx, double vy, double vz) {
+            var viewer = net.minecraft.client.MinecraftClient.getInstance().player;
+            if (!rune && viewer != null && viewer.getEyePos().squaredDistanceTo(x, y, z) < 2.25) return null;
             return new AbyssParticle(w, x, y, z, vx, vy, vz, sprites, rune);
         }
     }
