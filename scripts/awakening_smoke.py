@@ -6,7 +6,10 @@ REQUIRED={
 class AwakeningScenario:
     def __init__(self,command):self.command=command;self.boss=0;self.structures=set();self.bosses=set();self.terrain=False;self.collapse=False;self.progress=False
     def cmd(self,*commands):
-        for command in commands:self.command(command)
+        for command in commands:
+            self.command(command)
+            if command.startswith('execute in riftborn:the_abyss run tp RiftbornTester'):
+                self.command('riftborn_awake stop_motion')
     def hand(self,item):self.cmd('item replace entity RiftbornTester weapon.mainhand with '+item)
     def armor(self,tier):
         for slot,name in [('head','helmet'),('chest','chestplate'),('legs','leggings'),('feet','boots')]:self.cmd(f'item replace entity RiftbornTester armor.{slot} with riftborn:{tier}_{name}')
@@ -43,7 +46,7 @@ class AwakeningScenario:
         if 'RIFTBORN_20_STAFF_PULSE_OK' in line:self.cmd('riftborn_awake weapon','riftborn_awake heal_setup')
         if 'RIFTBORN_20_STAFF_MEND_OK' in line:self.cmd('riftborn_awake heal','item replace entity RiftbornTester weapon.offhand with riftborn:void_core')
         if 'RIFTBORN_20_ARTIFACT_OK' in line:
-            self.cmd('riftborn_awake artifact','item replace entity RiftbornTester weapon.offhand with minecraft:air','execute in riftborn:the_abyss run kill @e[tag=awakening_display]','execute in riftborn:the_abyss run kill @e[tag=awakening_weapon]','execute in riftborn:the_abyss run setblock 0 325 8 riftborn:colossus_altar','execute in riftborn:the_abyss run tp RiftbornTester 0.5 325 5.5 0 0')
+            self.cmd('riftborn_awake artifact','item replace entity RiftbornTester weapon.offhand with minecraft:air','riftborn_awake clear_displays','execute in riftborn:the_abyss run setblock 0 325 8 riftborn:colossus_altar','execute in riftborn:the_abyss run tp RiftbornTester 0.5 325 5.5 0 0')
             self.hand('riftborn:abyssal_core')
         if 'RIFTBORN_20_BOSS_SEEN' in line:self.cmd('riftborn_awake freeze')
         if 'RIFTBORN_20_SOVEREIGN_TRANSFORM' in line:self.cmd('riftborn_awake phase3')

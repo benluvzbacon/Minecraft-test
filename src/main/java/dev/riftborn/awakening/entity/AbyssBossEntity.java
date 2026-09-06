@@ -274,6 +274,8 @@ public abstract class AbyssBossEntity extends AbyssHostileEntity {
             for (var m : w.getEntitiesByClass(
                      AbyssHostileEntity.class, getBoundingBox().expand(128), e -> getUuid().equals(e.summoner())))
                 m.discard();
+            for (var bolt : w.getEntitiesByClass(AbyssBoltEntity.class, getBoundingBox().expand(128),
+                    projectile -> projectile.getOwner() == this)) bolt.discard();
             AbyssFx.burst(w, getPos().add(0, 2, 0), 64, 3);
             for (var player : bar.getPlayers())
                 player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.StopSoundS2CPacket(

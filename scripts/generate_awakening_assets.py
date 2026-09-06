@@ -133,7 +133,11 @@ def entities():
         # Dedicated UV glyph regions, eyes, articulated joints, and antique-metal trim.
         for y in [4,31,63,89,119]:im.line(0,y,127,y,GOLD)
         for x,y in [(15,16),(35,50),(78,44),(101,104)]:rune(im,x,y,7,CYAN if i%2==0 else GOLD)
-        im.rect(11,12,13,15,LIGHT);im.rect(17,12,19,15,LIGHT)
+        if name=='abyssal_colossus':
+            im.line(15,17,28,17,GOLD);im.rect(16,18,19,21,LIGHT);im.rect(24,18,27,21,LIGHT);im.rect(20,25,24,26,CYAN)
+        elif name=='void_reaver':
+            im.rect(7,8,8,9,LIGHT);im.rect(11,8,12,9,LIGHT);rune(im,17,49,4,CYAN)
+        else:im.rect(11,12,13,15,LIGHT);im.rect(17,12,19,15,LIGHT)
         im.rect(96,0,115,27,CYAN);im.rect(112,16,123,30,GOLD);im.rect(100,100,115,119,LIGHT)
         im.save(A+'textures/entity/awakening/'+name+'.png')
     eyes=Image(128,128);eyes.rect(11,12,13,15,LIGHT);eyes.rect(17,12,19,15,LIGHT);eyes.save(A+'textures/entity/awakening/abyss_stalker_eyes.png')

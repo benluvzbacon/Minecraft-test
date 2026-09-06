@@ -150,6 +150,14 @@ public final class AwakeningWorldTests {
                 p.teleportTo(new net.minecraft.world.TeleportTarget(destination, pos, Vec3d.ZERO, 180, 25,
                         net.minecraft.world.TeleportTarget.ADD_PORTAL_CHUNK_TICKET));
             }
+            case "stop_motion" -> {
+                p.setVelocity(Vec3d.ZERO);
+                p.velocityModified = true;
+            }
+            case "clear_displays" -> {
+                for (var entity : w.getOtherEntities(null, p.getBoundingBox().expand(100),
+                        e -> e.getCommandTags().contains("awakening_display") || e.getCommandTags().contains("awakening_weapon"))) entity.discard();
+            }
             case "key" -> {
                 require(state.has(p.getUuid(), AwakeningState.TEMPLE), "Puzzle completed before key");
                 var input = CraftingRecipeInput.create(3, 3,
