@@ -17,3 +17,6 @@ logs/
 .local/
 __pycache__/
 *.hprof
+
+# Verified downloads supplied alongside the source checkout
+artifacts/

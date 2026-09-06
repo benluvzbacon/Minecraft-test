@@ -253,7 +253,12 @@ public final class RiftbornGameTests implements FabricGameTest {
         target.setAiDisabled(true);
         wisp.setTarget(target);
         context.waitAndRun(100, () -> {
-            context.assertTrue(target.getHealth() < target.getMaxHealth(), "Wisp AI must fire damaging energy bolts");
+            context.assertTrue(target.getHealth() < target.getMaxHealth(), "Wisp AI must fire damaging energy bolts: age=" + wisp.age
+                    + ", aiDisabled=" + wisp.isAiDisabled() + ", removed=" + wisp.isRemoved() + ", position=" + wisp.getPos()
+                    + ", target=" + wisp.getTarget() + ", cow=" + target.getPos() + ", hp=" + target.getHealth()
+                    + ", visible=" + wisp.getVisibilityCache().canSee(target) + ", velocity=" + wisp.getVelocity()
+                    + ", bolts=" + context.getWorld().getEntitiesByClass(RiftBoltEntity.class,
+                            wisp.getBoundingBox().expand(40), entity -> entity.getOwner() == wisp).size());
             context.assertTrue(wisp.squaredDistanceTo(target) > 16, "Wisp should keep its distance rather than melee");
             context.assertTrue(wisp.hasNoGravity(), "Wisp should remain airborne");
             wisp.discard();

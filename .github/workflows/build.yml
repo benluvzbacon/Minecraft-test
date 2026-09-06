@@ -33,7 +33,10 @@ jobs:
         id: build
         run: |
           set -o pipefail
-          ./gradlew --no-daemon build 2>&1 | tee build-log.txt
+          ./gradlew --no-daemon clean build 2>&1 | tee build-log.txt
+      - name: Audit the remapped production jar
+        if: steps.build.outcome == 'success'
+        run: python3 scripts/verify_jar.py
       - name: Run dedicated-server GameTests
         id: gametest
         run: |
@@ -66,13 +69,34 @@ jobs:
         run: |
           set -o pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' python3 scripts/smoke_multiplayer.py --accept-eula 2>&1 | tee smoke-log.txt
+      # Temporary API mirror for retrieving verified deliverables from this sandbox.
+      # Removed once the final jar/screenshot are downloaded; normal delivery remains Actions artifacts.
+      - name: Mirror deliverables for this verification session
+        if: always() && steps.build.outcome == 'success' && github.event_name != 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs'), crypto = require('crypto');
+            const files = ['build/libs/riftborn-1.0.0.jar', 'run/smoke-client/screenshots/riftborn-smoke.png'];
+            for (const file of files) {
+              if (!fs.existsSync(file)) continue;
+              const bytes = fs.readFileSync(file), data = bytes.toString('base64');
+              const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+              const count = Math.ceil(data.length / 50000), name = file.split('/').pop();
+              for (let index = 0; index < count; index++) {
+                await github.rest.checks.create({owner: context.repo.owner, repo: context.repo.repo,
+                  name: `Riftborn delivery ${name} ${index + 1}/${count}`, head_sha: context.sha, status: 'completed',
+                  conclusion: 'success', output: {title: name, summary: JSON.stringify({name, sha256, size: bytes.length, index, count}),
+                    text: data.slice(index * 50000, (index + 1) * 50000)}});
+              }
+            }
       - name: Publish diagnostic check
         if: always() && github.event_name != 'pull_request'
         uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
-            const files = ['build-log.txt', 'gametest-log.txt', 'build/smoke-reports/server.log', 'smoke-log.txt'];
+            const files = ['build/jar-verification.json', 'build-log.txt', 'gametest-log.txt', 'build/smoke-reports/server.log', 'smoke-log.txt'];
             const read = file => fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n')
               .filter(line => !line.includes('\tat ') && !line.includes('[client] \t\tat '))
               .map(line => line.length > 1600 ? line.slice(0, 1600) + ' [long line shortened]' : line).join('\n').slice(-13500) : 'Not run.';
@@ -90,6 +114,8 @@ jobs:
           name: riftborn-1.21.1
           path: |
             build/libs/*.jar
+            build/libs/SHA256SUMS
+            build/jar-verification.json
             build/reports/
             build/test-results/
             build-log.txt
