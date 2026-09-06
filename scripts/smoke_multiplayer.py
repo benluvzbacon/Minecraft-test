@@ -5,6 +5,7 @@ Linux CI: LIBGL_ALWAYS_SOFTWARE=1 ALSOFT_DRIVERS=null xvfb-run -a python3 script
 The temporary, offline-mode server is confined to build/smoke-server. Never use its properties in production.
 """
 import argparse
+from awakening_smoke import AwakeningScenario, REQUIRED as AWAKENING_MARKERS
 from pathlib import Path
 import queue
 import subprocess
@@ -75,6 +76,7 @@ def main():
         ]:
             command(cmd)
 
+    awakening = AwakeningScenario(command)
     success = False
     joined = False
     server_ready = False
@@ -88,13 +90,14 @@ def main():
         "RIFTBORN_ADVENTURE_FLIGHT_OK", "RIFTBORN_CREATIVE_FLIGHT_OK", "RIFTBORN_CREATIVE_ARMOR_REMOVAL_OK",
         "RIFTBORN_SURVIVAL_FLIGHT_RESET_OK", "RIFTBORN_DIMENSION_FLIGHT_OK", "RIFTBORN_FLIGHT_RECONNECT_OK", "RIFTBORN_RESPAWN_FLIGHT_RESET_OK",
     }
+    required_markers.update(AWAKENING_MARKERS)
     armor = [("head", "helmet"), ("chest", "chestplate"), ("legs", "leggings"), ("feet", "boots")]
     server_checks = []
     surface_checks = set()
     natural_checks = set()
     def equipment(slot, item):
         command(f"item replace entity RiftbornTester armor.{slot} with {item}")
-    deadline = time.monotonic() + 900
+    deadline = time.monotonic() + 1200
     try:
         start("server", "runSmokeServer")
         while time.monotonic() < deadline:
@@ -116,12 +119,14 @@ def main():
                         raise RuntimeError("Rift placement and natural-generation checks must both succeed")
                     if server_checks.count("flight_active") < 5 or server_checks.count("flight_absent") < 6 or server_checks.count("creative_native") < 2:
                         raise RuntimeError("Missing server-side flight validations: " + repr(server_checks))
+                    awakening.verify()
                     print("RIFTBORN_DEDICATED_SERVER_AND_CLIENT_OK", flush=True)
                     return 0
                 else:
                     raise RuntimeError(f"{name} exited unexpectedly (exit {code}, client success {success})")
                 continue
             print(f"[{name}] {line}", flush=True)
+            awakening.handle(name, line)
             if name == "client":
                 markers.update(marker for marker in required_markers if marker in line)
             if name == "server":
@@ -191,7 +196,7 @@ def main():
                 success = True
             if "RIFTBORN_SMOKE_FAILURE:" in line:
                 raise RuntimeError(line)
-        raise TimeoutError("The multiplayer smoke test exceeded 15 minutes")
+        raise TimeoutError("The multiplayer smoke test exceeded 20 minutes")
     finally:
         for process in processes.values():
             if process.poll() is None: process.terminate()

@@ -31,6 +31,7 @@ import java.util.Set;
 /** Runs only from runClientSmoke; never packaged into Riftborn's production jar. */
 public final class RiftbornSmokeClient implements ClientModInitializer {
     private int ticks;
+    private boolean handedOff;
     private int stage;
     private int stageTick;
     private int enteredTick;
@@ -76,6 +77,7 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
     private void next(int stage) { this.stage = stage; stageTick = ticks; }
 
     private void tick(MinecraftClient client) {
+        if (handedOff) return;
         if (++ticks > 7200) throw new IllegalStateException("RIFTBORN_SMOKE_FAILURE: client test timed out at stage " + stage);
         if (ticks % 200 == 0) Riftborn.LOGGER.info("Smoke stage {}, screen {}, world {}, player {}", stage,
                 client.currentScreen == null ? "none" : client.currentScreen.getClass().getSimpleName(),
@@ -335,7 +337,7 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
             }
             case 26 -> {
                 if (ticks - stageTick > 30) {
-                    Riftborn.LOGGER.info("RIFTBORN_MULTIPLAYER_SMOKE_OK"); next(27); client.scheduleStop();
+                    Riftborn.LOGGER.info("RIFTBORN_LEGACY_SMOKE_OK"); next(27); handedOff=true; AwakeningSmoke.begin();
                 }
             }
             default -> { }
