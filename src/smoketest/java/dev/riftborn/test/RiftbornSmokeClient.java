@@ -2,6 +2,10 @@ package dev.riftborn.test;
 
 import dev.riftborn.Riftborn;
 import dev.riftborn.dimension.RiftDimensions;
+import dev.riftborn.effect.RiftFlight;
+import net.minecraft.client.option.Perspective;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.world.GameMode;
 import dev.riftborn.registry.ModEntities;
 import dev.riftborn.registry.ModBlocks;
 import dev.riftborn.registry.ModItems;
@@ -33,6 +37,11 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
     private boolean connecting;
     private Vec3d beforeBlink;
     private Vec3d afterBlink;
+    private Vec3d beforeFlight;
+    private Vec3d stoppedPosition;
+    private int removedPiece;
+    private static final EquipmentSlot[] ARMOR_SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+    private static final String[] ARMOR_NAMES = {"helmet", "chestplate", "leggings", "boots"};
 
     @Override public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(this::tick);
@@ -47,10 +56,24 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
                 new BlockHitResult(Vec3d.ofCenter(pos), Direction.UP, pos, false));
     }
 
+    private static boolean fullArmor(MinecraftClient client) {
+        return client.player.getEquippedStack(EquipmentSlot.HEAD).isOf(ModItems.RIFT_HELMET)
+                && client.player.getEquippedStack(EquipmentSlot.CHEST).isOf(ModItems.RIFT_CHESTPLATE)
+                && client.player.getEquippedStack(EquipmentSlot.LEGS).isOf(ModItems.RIFT_LEGGINGS)
+                && client.player.getEquippedStack(EquipmentSlot.FEET).isOf(ModItems.RIFT_BOOTS);
+    }
+    private static void fly(MinecraftClient client) {
+        client.player.getAbilities().flying = true; client.player.sendAbilitiesUpdate();
+    }
+    private static void releaseKeys(MinecraftClient client) {
+        client.options.forwardKey.setPressed(false); client.options.backKey.setPressed(false);
+        client.options.jumpKey.setPressed(false); client.options.sneakKey.setPressed(false);
+    }
+
     private void next(int stage) { this.stage = stage; stageTick = ticks; }
 
     private void tick(MinecraftClient client) {
-        if (++ticks > 2400) throw new IllegalStateException("RIFTBORN_SMOKE_FAILURE: client test timed out at stage " + stage);
+        if (++ticks > 7200) throw new IllegalStateException("RIFTBORN_SMOKE_FAILURE: client test timed out at stage " + stage);
         if (ticks % 200 == 0) Riftborn.LOGGER.info("Smoke stage {}, screen {}, world {}, player {}", stage,
                 client.currentScreen == null ? "none" : client.currentScreen.getClass().getSimpleName(),
                 client.world == null ? "none" : client.world.getRegistryKey().getValue(),
@@ -152,9 +175,162 @@ public final class RiftbornSmokeClient implements ClientModInitializer {
                 } else if (client.world.getRegistryKey().equals(World.OVERWORLD)) {
                     require(client.player.squaredDistanceTo(0.5, 100, 0.5) < 100, "Return anchor must lead back to the player's origin");
                     Riftborn.LOGGER.info("RIFTBORN_TRAVEL_RETURN_OK");
-                    Riftborn.LOGGER.info("RIFTBORN_MULTIPLAYER_SMOKE_OK");
                     next(7);
-                    client.scheduleStop();
+                }
+            }
+            case 7 -> {
+                if (fullArmor(client) && client.player.getAbilities().allowFlying && ticks - stageTick > 20) {
+                    require(Math.abs(client.player.getAbilities().getFlySpeed() - RiftFlight.FLIGHT_SPEED) < 0.00001, "Fast flight must synchronize from server");
+                    require(client.interactionManager.getCurrentGameMode() == GameMode.SURVIVAL, "Flight must not change Survival mode");
+                    fly(client); client.player.setYaw(-90); client.player.setPitch(0);
+                    beforeFlight = client.player.getPos();
+                    client.options.forwardKey.setPressed(true); client.options.jumpKey.setPressed(true);
+                    next(8);
+                }
+            }
+            case 8 -> {
+                if (ticks - stageTick > 20) {
+                    releaseKeys(client);
+                    Vec3d travel = client.player.getPos().subtract(beforeFlight);
+                    require(travel.x > 8 && travel.y > 3, "Fast flight must move horizontally and upward with normal input: " + travel);
+                    Riftborn.LOGGER.info("RIFTBORN_FLIGHT_MOVEMENT_OK {}", travel);
+                    next(9);
+                }
+            }
+            case 9 -> {
+                if (ticks - stageTick == 20) stoppedPosition = client.player.getPos();
+                if (ticks - stageTick > 40) {
+                    require(client.player.getPos().squaredDistanceTo(stoppedPosition) < 0.05, "Flight must stop normally when input is released");
+                    beforeFlight = client.player.getPos();
+                    client.options.backKey.setPressed(true); client.options.sneakKey.setPressed(true);
+                    next(10);
+                }
+            }
+            case 10 -> {
+                if (ticks - stageTick > 10) {
+                    releaseKeys(client);
+                    Vec3d travel = client.player.getPos().subtract(beforeFlight);
+                    require(travel.x < -3 && travel.y < -1, "Flight must reverse direction and descend: " + travel);
+                    Riftborn.LOGGER.info("RIFTBORN_FLIGHT_CONTROLS_OK");
+                    client.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+                    client.options.hudHidden = true;
+                    next(11);
+                }
+            }
+            case 11 -> {
+                client.getToastManager().clear(); client.inGameHud.getChatHud().clear(false);
+                if (ticks - stageTick > 60) {
+                    for (int layer : new int[]{1, 2}) require(client.getResourceManager().getResource(
+                            Riftborn.id("textures/models/armor/rift_layer_" + layer + ".png")).isPresent(), "Armor model texture layer must load");
+                    ScreenshotRecorder.saveScreenshot(client.runDirectory, "riftborn-armor.png", client.getFramebuffer(),
+                            message -> Riftborn.LOGGER.info("Armor screenshot: {}", message.getString()));
+                    client.options.setPerspective(Perspective.FIRST_PERSON); client.options.hudHidden = false;
+                    Riftborn.LOGGER.info("RIFTBORN_ARMOR_RENDER_OK");
+                    next(12);
+                }
+            }
+            case 12 -> {
+                if (client.player.getEquippedStack(ARMOR_SLOTS[removedPiece]).isEmpty()
+                        && !client.player.getAbilities().allowFlying && !client.player.getAbilities().flying) {
+                    // Deliberately send a forged vanilla abilities request after removing armor.
+                    client.player.getAbilities().flying = true; client.player.sendAbilitiesUpdate();
+                    next(13);
+                }
+            }
+            case 13 -> {
+                if (ticks - stageTick > 20) {
+                    require(!client.player.getAbilities().allowFlying && !client.player.getAbilities().flying,
+                            "Server must reject flight without " + ARMOR_NAMES[removedPiece]);
+                    require(Math.abs(client.player.getAbilities().getFlySpeed() - 0.05f) < 0.00001, "Bonus speed must be revoked");
+                    Riftborn.LOGGER.info("RIFTBORN_ARMOR_PIECE_REMOVED_OK {}", ARMOR_NAMES[removedPiece]);
+                    if (++removedPiece < 4) next(12);
+                    else { Riftborn.LOGGER.info("RIFTBORN_ARMOR_REMOVAL_OK"); next(14); }
+                }
+            }
+            case 14 -> {
+                if (fullArmor(client) && client.player.getAbilities().allowFlying
+                        && client.interactionManager.getCurrentGameMode() == GameMode.ADVENTURE) {
+                    fly(client); next(15);
+                }
+            }
+            case 15 -> {
+                if (ticks - stageTick > 20) {
+                    require(client.player.getAbilities().flying && !client.player.getAbilities().allowModifyWorld, "Adventure flight keeps Adventure restrictions");
+                    Riftborn.LOGGER.info("RIFTBORN_ADVENTURE_FLIGHT_OK"); next(16);
+                }
+            }
+            case 16 -> {
+                if (client.interactionManager.getCurrentGameMode() == GameMode.CREATIVE
+                        && client.player.getAbilities().allowFlying && Math.abs(client.player.getAbilities().getFlySpeed() - 0.05f) < 0.00001) {
+                    Riftborn.LOGGER.info("RIFTBORN_CREATIVE_FLIGHT_OK"); next(17);
+                }
+            }
+            case 17 -> {
+                if (client.player.getEquippedStack(EquipmentSlot.HEAD).isEmpty()) {
+                    require(client.player.getAbilities().allowFlying && Math.abs(client.player.getAbilities().getFlySpeed() - 0.05f) < 0.00001,
+                            "Creative flight must survive armor removal");
+                    Riftborn.LOGGER.info("RIFTBORN_CREATIVE_ARMOR_REMOVAL_OK"); next(18);
+                }
+            }
+            case 18 -> {
+                if (client.interactionManager.getCurrentGameMode() == GameMode.SURVIVAL && !client.player.getAbilities().allowFlying) {
+                    require(!client.player.getAbilities().flying, "Creative to unarmored Survival must not retain flight");
+                    Riftborn.LOGGER.info("RIFTBORN_SURVIVAL_FLIGHT_RESET_OK"); next(19);
+                }
+            }
+            case 19 -> {
+                if (inRift && fullArmor(client) && client.player.getAbilities().allowFlying && client.currentScreen == null && ticks - stageTick > 30) {
+                    fly(client); client.options.setPerspective(Perspective.THIRD_PERSON_FRONT); client.options.hudHidden = true;
+                    next(20);
+                }
+            }
+            case 20 -> {
+                client.getToastManager().clear(); client.inGameHud.getChatHud().clear(false);
+                if (ticks - stageTick > 60) {
+                    require(inRift && client.player.getAbilities().flying, "Full-set flight must work after a dimension change");
+                    ScreenshotRecorder.saveScreenshot(client.runDirectory, "riftborn-flight.png", client.getFramebuffer(),
+                            message -> Riftborn.LOGGER.info("Flight screenshot: {}", message.getString()));
+                    client.options.setPerspective(Perspective.FIRST_PERSON); client.options.hudHidden = false;
+                    Riftborn.LOGGER.info("RIFTBORN_DIMENSION_FLIGHT_OK"); next(21);
+                }
+            }
+            case 21 -> {
+                if (!inRift && client.currentScreen == null && ticks - stageTick > 30) {
+                    require(fullArmor(client) && client.player.getAbilities().allowFlying && client.player.getAbilities().flying,
+                            "Returning dimensions must keep a valid armor flight grant");
+                    Riftborn.LOGGER.info("RIFTBORN_FLIGHT_RECONNECT_START"); next(22);
+                }
+            }
+            case 22 -> {
+                if (ticks - stageTick > 20) {
+                    releaseKeys(client); client.disconnect(new TitleScreen()); connecting = false; next(23);
+                }
+            }
+            case 23 -> {
+                if (client.currentScreen == null && ticks - stageTick > 40) {
+                    require(fullArmor(client) && client.player.getAbilities().allowFlying && client.player.getAbilities().flying,
+                            "Reconnect must revalidate equipped armor and safely resume a valid flight");
+                    require(Math.abs(client.player.getAbilities().getFlySpeed() - RiftFlight.FLIGHT_SPEED) < 0.00001, "Reconnect must restore the validated bonus speed");
+                    Riftborn.LOGGER.info("RIFTBORN_FLIGHT_RECONNECT_OK"); next(24);
+                }
+            }
+            case 24 -> {
+                if (client.player.getHealth() <= 0 && ticks - stageTick > 20) {
+                    require(!client.player.getAbilities().allowFlying, "Death must revoke the flight grant");
+                    client.player.requestRespawn(); client.setScreen(null); next(25);
+                }
+            }
+            case 25 -> {
+                if (client.player.getHealth() > 0 && client.currentScreen == null && ticks - stageTick > 30) {
+                    require(!fullArmor(client) && !client.player.getAbilities().allowFlying && !client.player.getAbilities().flying,
+                            "Respawning without armor must not inherit flight");
+                    require(Math.abs(client.player.getAbilities().getFlySpeed() - 0.05f) < 0.00001, "Respawn must not inherit flight speed");
+                    Riftborn.LOGGER.info("RIFTBORN_RESPAWN_FLIGHT_RESET_OK"); next(26);
+                }
+            }
+            case 26 -> {
+                if (ticks - stageTick > 30) {
+                    Riftborn.LOGGER.info("RIFTBORN_MULTIPLAYER_SMOKE_OK"); next(27); client.scheduleStop();
                 }
             }
             default -> { }

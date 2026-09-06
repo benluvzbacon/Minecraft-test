@@ -83,6 +83,7 @@ jobs:
           script: |
             const fs = require('fs');
             const files = ['build/jar-verification.json', 'build-log.txt', 'gametest-log.txt', 'build/smoke-reports/server.log', 'smoke-log.txt'];
+            if (fs.existsSync('build/test-results/test')) files.push(...fs.readdirSync('build/test-results/test').filter(name => name.endsWith('.xml')).map(name => 'build/test-results/test/' + name));
             const read = file => fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n')
               .filter(line => !line.includes('\tat ') && !line.includes('[client] \t\tat '))
               .map(line => line.length > 1600 ? line.slice(0, 1600) + ' [long line shortened]' : line).join('\n').slice(-13500) : 'Not run.';

@@ -59,7 +59,7 @@ def main():
     def fixture():
         for cmd in [
             "gamerule doMobSpawning false", "gamerule doWeatherCycle false", "gamerule doDaylightCycle false",
-            "gamerule keepInventory true", "gamerule spawnChunkRadius 0", "time set day",
+            "gamerule keepInventory true", "gamerule spawnChunkRadius 0", "gamerule spawnRadius 0", "time set day",
             "forceload add -16 -16 16 16",
             "execute in riftborn:the_rift run forceload add -16 -16 48 64",
             "fill -6 99 -6 6 99 6 minecraft:stone", "fill -6 100 -6 6 106 6 minecraft:air",
@@ -84,8 +84,17 @@ def main():
     required_markers = {
         "RIFTBORN_TRAVEL_ENTRY_OK", "RIFTBORN_MULTIPLAYER_BLINK_OK", "RIFTBORN_FLOATING_TERRAIN_OK",
         "RIFTBORN_SCENE_RENDER_OK", "RIFTBORN_TRAVEL_RETURN_OK", "RIFTBORN_MULTIPLAYER_SMOKE_OK",
+        "RIFTBORN_FLIGHT_MOVEMENT_OK", "RIFTBORN_FLIGHT_CONTROLS_OK", "RIFTBORN_ARMOR_RENDER_OK", "RIFTBORN_ARMOR_REMOVAL_OK",
+        "RIFTBORN_ADVENTURE_FLIGHT_OK", "RIFTBORN_CREATIVE_FLIGHT_OK", "RIFTBORN_CREATIVE_ARMOR_REMOVAL_OK",
+        "RIFTBORN_SURVIVAL_FLIGHT_RESET_OK", "RIFTBORN_DIMENSION_FLIGHT_OK", "RIFTBORN_FLIGHT_RECONNECT_OK", "RIFTBORN_RESPAWN_FLIGHT_RESET_OK",
     }
-    deadline = time.monotonic() + 600
+    armor = [("head", "helmet"), ("chest", "chestplate"), ("legs", "leggings"), ("feet", "boots")]
+    server_checks = []
+    surface_checks = set()
+    natural_checks = set()
+    def equipment(slot, item):
+        command(f"item replace entity RiftbornTester armor.{slot} with {item}")
+    deadline = time.monotonic() + 900
     try:
         start("server", "runSmokeServer")
         while time.monotonic() < deadline:
@@ -103,6 +112,10 @@ def main():
                         raise RuntimeError("Both natural structure locates must succeed: " + repr(located))
                     if not required_markers.issubset(markers):
                         raise RuntimeError("Missing client milestones: " + repr(required_markers - markers))
+                    if surface_checks != {"rift_ruin", "guardian_shrine"} or natural_checks != surface_checks:
+                        raise RuntimeError("Rift placement and natural-generation checks must both succeed")
+                    if server_checks.count("flight_active") < 5 or server_checks.count("flight_absent") < 6 or server_checks.count("creative_native") < 2:
+                        raise RuntimeError("Missing server-side flight validations: " + repr(server_checks))
                     print("RIFTBORN_DEDICATED_SERVER_AND_CLIENT_OK", flush=True)
                     return 0
                 else:
@@ -111,6 +124,12 @@ def main():
             print(f"[{name}] {line}", flush=True)
             if name == "client":
                 markers.update(marker for marker in required_markers if marker in line)
+            if name == "server":
+                for structure in ("rift_ruin", "guardian_shrine"):
+                    if "RIFTBORN_SURFACE_PLACEMENT_OK " + structure in line: surface_checks.add(structure)
+                    if "RIFTBORN_NATURAL_STRUCTURE_OK " + structure in line: natural_checks.add(structure)
+                for state in ("flight_active", "flight_absent", "creative_native"):
+                    if "RIFTBORN_SERVER_FLIGHT_CHECK " + state in line: server_checks.append(state)
             if name == "server" and "The nearest riftborn:" in line:
                 for structure in ("guardian_shrine", "overworld_ruin"):
                     if "riftborn:" + structure in line: located.add(structure)
@@ -131,11 +150,48 @@ def main():
             if name == "client" and "RIFTBORN_SCENE_RENDER_OK" in line:
                 command("clear RiftbornTester")
                 command("execute in riftborn:the_rift run tp RiftbornTester 16.5 141 6.5 180 0")
+            if name == "client" and "RIFTBORN_TRAVEL_RETURN_OK" in line:
+                command("tp RiftbornTester 0.5 100 2.5 -90 0")
+                for slot, piece in armor: equipment(slot, "riftborn:rift_" + piece)
+            if name == "client" and "RIFTBORN_FLIGHT_MOVEMENT_OK" in line:
+                command("riftborn_test flight_active")
+            if name == "client" and "RIFTBORN_ARMOR_RENDER_OK" in line:
+                command("tp RiftbornTester 0.5 100 2.5 180 0")
+                equipment("head", "minecraft:air")
+            if name == "client" and "RIFTBORN_ARMOR_PIECE_REMOVED_OK" in line:
+                piece = line.split()[-1]
+                index = [name for _, name in armor].index(piece)
+                command("riftborn_test flight_absent")
+                equipment(armor[index][0], "riftborn:rift_" + piece)
+                if index < 3: equipment(armor[index + 1][0], "minecraft:air")
+                else:
+                    command("gamemode adventure RiftbornTester")
+                    command("tp RiftbornTester 0.5 106 2.5 180 0")
+            if name == "client" and "RIFTBORN_ADVENTURE_FLIGHT_OK" in line:
+                command("riftborn_test flight_active")
+                command("gamemode creative RiftbornTester")
+            if name == "client" and "RIFTBORN_CREATIVE_FLIGHT_OK" in line:
+                command("riftborn_test creative_native"); equipment("head", "minecraft:air")
+            if name == "client" and "RIFTBORN_CREATIVE_ARMOR_REMOVAL_OK" in line:
+                command("riftborn_test creative_native"); command("gamemode survival RiftbornTester")
+            if name == "client" and "RIFTBORN_SURVIVAL_FLIGHT_RESET_OK" in line:
+                command("riftborn_test flight_absent"); equipment("head", "riftborn:rift_helmet")
+                command("execute in riftborn:the_rift run tp RiftbornTester 16.5 149 40.5 160 0")
+            if name == "client" and "RIFTBORN_DIMENSION_FLIGHT_OK" in line:
+                command("riftborn_test flight_active")
+                command("execute in minecraft:overworld run tp RiftbornTester 0.5 108 2.5 180 0")
+            if name == "client" and "RIFTBORN_FLIGHT_RECONNECT_START" in line:
+                command("riftborn_test flight_active")
+            if name == "client" and "RIFTBORN_FLIGHT_RECONNECT_OK" in line:
+                command("riftborn_test flight_active")
+                command("gamerule keepInventory false"); command("kill RiftbornTester")
+            if name == "client" and "RIFTBORN_RESPAWN_FLIGHT_RESET_OK" in line:
+                command("riftborn_test flight_absent")
             if name == "client" and "RIFTBORN_MULTIPLAYER_SMOKE_OK" in line:
                 success = True
             if "RIFTBORN_SMOKE_FAILURE:" in line:
                 raise RuntimeError(line)
-        raise TimeoutError("The multiplayer smoke test exceeded 10 minutes")
+        raise TimeoutError("The multiplayer smoke test exceeded 15 minutes")
     finally:
         for process in processes.values():
             if process.poll() is None: process.terminate()
