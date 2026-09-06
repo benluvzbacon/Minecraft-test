@@ -1,6 +1,8 @@
 package dev.riftborn.effect;
 
 import dev.riftborn.registry.ModItems;
+import dev.riftborn.awakening.AbyssGear;
+import dev.riftborn.awakening.AbyssFx;
 import dev.riftborn.registry.ModParticles;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -56,10 +58,10 @@ public final class RiftFlight {
     }
 
     public static boolean hasFullSet(ServerPlayerEntity player) {
-        return player.getEquippedStack(EquipmentSlot.HEAD).isOf(ModItems.RIFT_HELMET)
+        return AbyssGear.fullSet(player) || (player.getEquippedStack(EquipmentSlot.HEAD).isOf(ModItems.RIFT_HELMET)
                 && player.getEquippedStack(EquipmentSlot.CHEST).isOf(ModItems.RIFT_CHESTPLATE)
                 && player.getEquippedStack(EquipmentSlot.LEGS).isOf(ModItems.RIFT_LEGGINGS)
-                && player.getEquippedStack(EquipmentSlot.FEET).isOf(ModItems.RIFT_BOOTS);
+                && player.getEquippedStack(EquipmentSlot.FEET).isOf(ModItems.RIFT_BOOTS));
     }
 
     private static boolean eligible(ServerPlayerEntity player) {
@@ -85,9 +87,10 @@ public final class RiftFlight {
                 grant = new Grant(player);
                 GRANTS.put(player, grant);
             }
-            changed = !abilities.allowFlying || Float.compare(abilities.getFlySpeed(), FLIGHT_SPEED) != 0;
+            float speed = AbyssGear.flightSpeed(player);
+            changed = !abilities.allowFlying || Float.compare(abilities.getFlySpeed(), speed) != 0;
             abilities.allowFlying = true;
-            abilities.setFlySpeed(FLIGHT_SPEED);
+            abilities.setFlySpeed(speed);
         } else if (grant != null) {
             GRANTS.remove(player);
             // Never take Creative/Spectator flight away. Only undo the bonus we own.
@@ -121,7 +124,7 @@ public final class RiftFlight {
                         SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.35f, 1.4f);
                 grant.lastSoundTick = player.age;
             }
-            if (player.age % 6 == 0) player.getServerWorld().spawnParticles(ModParticles.RIFT_MOTE,
+            if (player.age % 6 == 0) player.getServerWorld().spawnParticles(AbyssGear.fullSet(player) ? AbyssFx.MOTE : ModParticles.RIFT_MOTE,
                     player.getX(), player.getY() + 0.8, player.getZ(), 2, 0.28, 0.35, 0.28, 0.008);
         }
         grant.wasFlying = flying;

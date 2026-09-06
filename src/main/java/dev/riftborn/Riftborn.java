@@ -34,6 +34,7 @@ public final class Riftborn implements ModInitializer {
         ModItems.initialize();
         RiftStructures.initialize();
         RiftWorldgen.initialize();
+        dev.riftborn.awakening.Awakening.initialize();
         RiftFlight.initialize();
         LOGGER.info("Riftborn initialized: follow the fractures.");
     }

@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: riftborn-1.21.1
-          path: build/libs/riftborn-1.5.0.jar
+          path: build/libs/riftborn-2.0.0.jar
           if-no-files-found: error
       - name: Run dedicated-server GameTests
         id: gametest

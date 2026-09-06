@@ -1,0 +1,29 @@
+package dev.riftborn.awakening.client;
+import dev.riftborn.Riftborn;import dev.riftborn.awakening.*;import dev.riftborn.awakening.entity.*;import dev.riftborn.client.RiftSkyRenderer;import dev.riftborn.dimension.RiftDimensions;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;import net.fabricmc.fabric.api.client.networking.v1.*;import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;import net.fabricmc.fabric.api.client.rendering.v1.*;
+import net.minecraft.client.MinecraftClient;import net.minecraft.client.option.KeyBinding;import net.minecraft.client.render.RenderLayer;import net.minecraft.client.render.entity.FlyingItemEntityRenderer;import net.minecraft.client.render.entity.model.EntityModelLayer;import net.minecraft.client.util.InputUtil;import net.minecraft.entity.EntityType;import net.minecraft.text.Text;import net.minecraft.item.ItemStack;import net.minecraft.client.world.ClientWorld;import org.lwjgl.glfw.GLFW;
+public final class AwakeningClient {
+    public static int eventKind,eventRemaining;private static int ticks;
+    private static final KeyBinding DASH=KeyBindingHelper.registerKeyBinding(new KeyBinding("key.riftborn.dash",InputUtil.Type.KEYSYM,GLFW.GLFW_KEY_R,"category.riftborn"));
+    private static <T extends AbyssHostileEntity>void renderer(EntityType<T> type,String name,int kind){var layer=new EntityModelLayer(Riftborn.id("awakening/"+name),"main");EntityModelLayerRegistry.registerModelLayer(layer,()->AwakeningModel.data(kind));EntityRendererRegistry.register(type,ctx->new AwakeningRenderer<>(ctx,layer,name,kind));}
+    public static void initialize(){renderer(AbyssEntities.STALKER,"abyss_stalker",0);renderer(AbyssEntities.REAVER,"void_reaver",1);renderer(AbyssEntities.BRUTE,"abyssal_brute",2);renderer(AbyssEntities.ECHO,"rift_echo",3);renderer(AbyssEntities.WARDEN,"abyssal_warden",4);renderer(AbyssEntities.COLOSSUS,"abyssal_colossus",5);renderer(AbyssEntities.ARCHITECT,"rift_architect",6);renderer(AbyssEntities.SOVEREIGN,"abyss_sovereign",7);renderer(AbyssEntities.HERALD,"collapse_herald",8);
+        EntityRendererRegistry.register(AbyssEntities.BOLT,ctx->new FlyingItemEntityRenderer<>(ctx,0.7f,true));
+        ParticleFactoryRegistry.getInstance().register(AbyssFx.MOTE,s->new AbyssParticle.Factory(s,false));ParticleFactoryRegistry.getInstance().register(AbyssFx.RUNE,s->new AbyssParticle.Factory(s,true));
+        for(var plant:new net.minecraft.block.Block[]{AbyssBlocks.ECHO_FERN,AbyssBlocks.ASHEN_REEDS,AbyssBlocks.BRAMBLE})BlockRenderLayerMap.INSTANCE.putBlock(plant,RenderLayer.getCutout());BlockRenderLayerMap.INSTANCE.putBlock(AbyssBlocks.BARRIER,RenderLayer.getTranslucent());
+        DimensionRenderingRegistry.registerDimensionEffects(Riftborn.id("the_abyss"),new AbyssDimensionEffects());DimensionRenderingRegistry.registerSkyRenderer(AbyssWorlds.ABYSS,AbyssSkyRenderer::render);
+        DimensionRenderingRegistry.registerSkyRenderer(RiftDimensions.WORLD,context->{RiftSkyRenderer.render(context);AbyssSkyRenderer.stormOverlay(context);});
+        ClientPlayNetworking.registerGlobalReceiver(AwakeningNetwork.Event.ID,(payload,ctx)->ctx.client().execute(()->{eventKind=Math.clamp(payload.kind(),0,2);eventRemaining=Math.max(0,payload.remaining());}));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler,client)->{eventKind=0;eventRemaining=0;});
+        ClientTickEvents.END_CLIENT_TICK.register(client->{ticks++;if(eventRemaining>0&&--eventRemaining==0)eventKind=0;
+            while(DASH.wasPressed())if(client.player!=null&&client.currentScreen==null&&ClientPlayNetworking.canSend(AwakeningNetwork.Dash.ID))ClientPlayNetworking.send(new AwakeningNetwork.Dash());
+            if(client.world!=null&&client.player!=null&&eventKind!=0&&ticks%5==0&&AbyssWorlds.isRealm(client.world)){var r=client.world.random;for(int i=0;i<(eventKind==2?4:2);i++)client.world.addParticle(AbyssFx.RUNE,client.player.getX()+r.nextDouble()*40-20,client.player.getY()+r.nextDouble()*14,client.player.getZ()+r.nextDouble()*40-20,0,-0.035,0);}
+        });
+        HudRenderCallback.EVENT.register((context,counter)->{var client=MinecraftClient.getInstance();if(client.player==null||client.options.hudHidden)return;int width=context.getScaledWindowWidth(),height=context.getScaledWindowHeight();
+            if(AbyssGear.fullSet(client.player)&&!client.player.isCreative()&&!client.player.isSpectator()){float dash=client.player.getItemCooldownManager().getCooldownProgress(AbyssItems.ABYSSAL_BOOTS,0);context.fill(width/2-46,height-65,width/2+46,height-61,0x9910212a);context.fill(width/2-46,height-65,width/2-46+(int)(92*(1-dash)),height-61,0xff66e6df);context.drawCenteredTextWithShadow(client.textRenderer,Text.translatable(dash>0?"hud.riftborn.dash_cooling":"hud.riftborn.dash_ready"),width/2,height-77,0x99eee7);}
+            if(eventKind!=0&&client.world!=null&&AbyssWorlds.isRealm(client.world)){var label=Text.translatable(eventKind==2?"hud.riftborn.collapse":"hud.riftborn.storm",eventRemaining/20);int tw=client.textRenderer.getWidth(label);context.fill(width-tw-17,8,width-7,27,0xb8101727);context.drawTextWithShadow(client.textRenderer,label,width-tw-12,13,eventKind==2?0xffc58e:0x79e5e9);}
+        });
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(AbyssItems.VOIDBOW,Riftborn.id("pull"),(stack,world,entity,seed)->entity!=null&&entity.getActiveItem()==stack?(stack.getMaxUseTime(entity)-entity.getItemUseTimeLeft())/20f:0);
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(AbyssItems.VOIDBOW,Riftborn.id("pulling"),(stack,world,entity,seed)->entity!=null&&entity.isUsingItem()&&entity.getActiveItem()==stack?1:0);
+    }
+    private AwakeningClient(){}
+}

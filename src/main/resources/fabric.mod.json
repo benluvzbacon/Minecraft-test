@@ -3,7 +3,7 @@
   "id": "riftborn",
   "version": "${version}",
   "name": "Riftborn",
-  "description": "Rift Ascension: explore floating ruins, challenge the Rift Guardian, forge Rift Armor, and master Rift Flight.",
+  "description": "The Rift Awakening: descend into The Abyss, uncover the Guardian's secret, and challenge the Abyss Sovereign.",
   "authors": [
     "Riftborn contributors"
   ],
@@ -25,6 +25,10 @@
   },
   "icon": "assets/riftborn/icon.png",
   "mixins": [
-    "riftborn.mixins.json"
+    "riftborn.mixins.json",
+    {
+      "config": "riftborn.client.mixins.json",
+      "environment": "client"
+    }
   ]
 }

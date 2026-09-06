@@ -17,6 +17,14 @@ public final class RiftbornConfig {
     public int compassCooldownTicks = 100;
     public int locateRadius = 32;
     public int overworldStalkerWeight = 6;
+    public float riftFlightSpeed = 0.15f;
+    public float abyssalFlightSpeed = 0.22f;
+    public boolean abyssalDashEnabled = true;
+    public int abyssalDashCooldownTicks = 160;
+    public boolean realmEventsEnabled = true;
+    public int stormIntervalTicks = 36000;
+    public int collapseIntervalTicks = 144000;
+    public int eventMobCap = 8;
 
     public static RiftbornConfig load() {
         Path file = FabricLoader.getInstance().getConfigDir().resolve("riftborn.json");
@@ -38,6 +46,12 @@ public final class RiftbornConfig {
         config.compassCooldownTicks = Math.clamp(config.compassCooldownTicks, 40, 1200);
         config.locateRadius = Math.clamp(config.locateRadius, 4, 64);
         config.overworldStalkerWeight = Math.clamp(config.overworldStalkerWeight, 0, 30);
+        config.riftFlightSpeed = Float.isFinite(config.riftFlightSpeed) ? Math.clamp(config.riftFlightSpeed, 0.06f, 0.35f) : 0.15f;
+        config.abyssalFlightSpeed = Float.isFinite(config.abyssalFlightSpeed) ? Math.clamp(config.abyssalFlightSpeed, config.riftFlightSpeed + 0.025f, 0.5f) : Math.max(0.22f, config.riftFlightSpeed + 0.025f);
+        config.abyssalDashCooldownTicks = Math.clamp(config.abyssalDashCooldownTicks, 60, 1200);
+        config.stormIntervalTicks = Math.clamp(config.stormIntervalTicks, 12000, 144000);
+        config.collapseIntervalTicks = Math.clamp(config.collapseIntervalTicks, 72000, 720000);
+        config.eventMobCap = Math.clamp(config.eventMobCap, 2, 12);
         return config;
     }
 }

@@ -42,6 +42,7 @@ public final class RiftbornClient implements ClientModInitializer {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.VOID_BLOOM, RenderLayer.getCutout());
         DimensionRenderingRegistry.registerDimensionEffects(Riftborn.id("the_rift"), new RiftDimensionEffects());
         DimensionRenderingRegistry.registerSkyRenderer(RiftDimensions.WORLD, RiftSkyRenderer::render);
+        dev.riftborn.awakening.client.AwakeningClient.initialize();
         Riftborn.LOGGER.info("Riftborn client renderers, particles and sky registered");
     }
 }

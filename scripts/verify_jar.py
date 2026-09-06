@@ -6,13 +6,13 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-JAR = ROOT / 'build/libs/riftborn-1.5.0.jar'
+JAR = ROOT / 'build/libs/riftborn-2.0.0.jar'
 with zipfile.ZipFile(JAR) as archive:
     names = archive.namelist()
     assert len(names) == len(set(names)), 'Duplicate entries in production jar'
     assert archive.testzip() is None, 'Invalid jar CRC'
     metadata = json.loads(archive.read('fabric.mod.json'))
-    assert metadata['id'] == 'riftborn' and metadata['version'] == '1.5.0'
+    assert metadata['id'] == 'riftborn' and metadata['version'] == '2.0.0'
     assert metadata['environment'] == '*'
     for group in ('main', 'client'):
         for entrypoint in metadata['entrypoints'][group]:
@@ -20,11 +20,12 @@ with zipfile.ZipFile(JAR) as archive:
     assert not any('riftborn_test' in name or 'RiftbornGameTests' in name
                    or 'dev/riftborn/test/' in name or 'RiftbornSmokeClient' in name for name in names), 'Development mod leaked into jar'
     for config in metadata.get('mixins', []):
+        config = config if isinstance(config, str) else config["config"]
         mixins = json.loads(archive.read(config))
         assert mixins.get('refmap') in names, f'Missing production mixin refmap: {config}'
         refmap = json.loads(archive.read(mixins['refmap']))
         assert refmap.get('mappings'), 'Production mixin targets must be remapped'
-        for mixin in mixins['mixins']:
+        for mixin in mixins.get('mixins', []) + mixins.get('client', []):
             assert (mixins['package'] + '.' + mixin).replace('.', '/') + '.class' in names
     classes = [archive.read(name) for name in names if name.endswith('.class')]
     assert classes and all(code[:4] == b'\xca\xfe\xba\xbe' and int.from_bytes(code[6:8], 'big') == 65
