@@ -57,6 +57,10 @@ sourceSets {
         compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
         runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
     }
+    worldtest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
     smoketest {
         compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output + sourceSets.client.compileClasspath + sourceSets.client.output
         runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output + sourceSets.client.runtimeClasspath + sourceSets.client.output
@@ -66,6 +70,7 @@ loom {
     mods {
         riftborn_test { sourceSet sourceSets.gametest }
         riftborn_smoketest { sourceSet sourceSets.smoketest }
+        riftborn_worldtest { sourceSet sourceSets.worldtest }
     }
     runs {
         gametest {
@@ -88,6 +93,7 @@ loom {
         smokeServer {
             server()
             name 'Riftborn isolated smoke server'
+            source sourceSets.worldtest
             runDir 'build/smoke-server'
             vmArg '-Xmx1536m'
             programArg 'nogui'
@@ -104,7 +110,7 @@ tasks.named('runGametest') {
         file('build/gametest/eula.txt').text = 'eula=true\n'
     }
 }
-tasks.named('check') { dependsOn 'compileGametestJava', 'compileSmoketestJava' }
+tasks.named('check') { dependsOn 'compileGametestJava', 'compileSmoketestJava', 'compileWorldtestJava' }
 
 // Stable archives make a rebuilt release easy to compare by checksum.
 tasks.withType(AbstractArchiveTask).configureEach {
