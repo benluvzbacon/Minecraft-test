@@ -53,6 +53,8 @@ class AwakeningScenario:
         if 'RIFTBORN_20_BOSS_COMBAT' in line:self.cmd('execute in riftborn:the_abyss run tp RiftbornTester 0.5 334 5.5 0 25','riftborn_awake combat')
         if 'RIFTBORN_20_BOSS_DEFEAT_REQUEST' in line:
             self.cmd('riftborn_awake defeat')
+        if 'RIFTBORN_20_BOSS_CLEARED' in line:
+            # Wait for the large death-animation hitbox to disappear before resetting the test player.
             if self.boss==0:
                 self.cmd('execute in riftborn:the_abyss run setblock 0 325 8 riftborn:architect_altar','execute in riftborn:the_abyss run tp RiftbornTester 0.5 325 5.5 0 0');self.hand('riftborn:titan_core')
             elif self.boss==1:

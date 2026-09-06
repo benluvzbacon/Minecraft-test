@@ -338,6 +338,7 @@ public final class AwakeningSmoke {
             }
             case 30 -> {
                 if (boss(c) == null && age() > 30) {
+                    marker("RIFTBORN_20_BOSS_CLEARED");
                     if (bossIndex == 0) {
                         bossIndex = 1;
                         next(31);

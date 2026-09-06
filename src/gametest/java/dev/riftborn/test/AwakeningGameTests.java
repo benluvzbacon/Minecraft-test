@@ -245,4 +245,77 @@ public final class AwakeningGameTests implements FabricGameTest {
         c.assertEquals(loaded.event(AbyssWorlds.ABYSS).kind, 2, "Event state persists");
         c.complete();
     }
+    @GameTest(templateName = ARENA, tickLimit = 210)
+    public void stalkerCloakIsTemporaryAndSurvivesReload(TestContext c) {
+        var stalker = c.spawnEntity(AbyssEntities.STALKER, 20, 2, 32);
+        var target = c.spawnMob(EntityType.COW, 34, 2, 32);
+        target.setAiDisabled(true);
+        stalker.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0);
+        stalker.setTarget(target);
+        c.waitAndRun(140, () -> {
+            c.assertTrue(stalker.isInvisible(), "Abyss Stalker must actually cloak while hunting");
+            var saved = new NbtCompound(); stalker.writeCustomDataToNbt(saved);
+            var copy = AbyssEntities.STALKER.create(c.getWorld()); copy.readCustomDataFromNbt(saved);
+            c.assertTrue(copy.isInvisible(), "A brief remaining cloak is serialized, not made permanent");
+            copy.discard();
+        });
+        c.waitAndRun(190, () -> {
+            c.assertFalse(stalker.isInvisible(), "Cloak must end without requiring a kill or reload");
+            stalker.discard(); c.complete();
+        });
+    }
+
+    @GameTest(templateName = ARENA, tickLimit = 180)
+    public void reaverActuallyFliesAndFiresItsPairedBolts(TestContext c) {
+        var reaver = c.spawnEntity(AbyssEntities.REAVER, 40, 8, 32);
+        var target = c.spawnMob(EntityType.COW, 28, 2, 32); target.setAiDisabled(true);
+        reaver.setTarget(target); var before = reaver.getPos();
+        c.waitAndRun(140, () -> {
+            c.assertTrue(reaver.hasNoGravity() && reaver.getPos().squaredDistanceTo(before) > 2, "Reaver strafes in the air");
+            c.assertTrue(target.getHealth() < target.getMaxHealth(), "Reaver's ranged AI deals actual projectile damage");
+            reaver.discard(); c.complete();
+        });
+    }
+
+    @GameTest(templateName = ARENA)
+    public void abyssBruteHasHeavyMeleeAndKnockback(TestContext c) {
+        var brute = c.spawnMob(AbyssEntities.BRUTE, 25, 2, 32);
+        var target = c.spawnMob(EntityType.ZOMBIE, 28, 2, 32);
+        c.assertTrue(brute.tryAttack(target), "Abyss Brute melee succeeds");
+        c.assertTrue(target.getHealth() < 8, "Abyss Brute hits substantially harder than a normal mob");
+        c.assertTrue(target.getVelocity().horizontalLengthSquared() > 0.2, "Abyss Brute applies strong knockback");
+        c.complete();
+    }
+
+    @GameTest(templateName = ARENA, tickLimit = 60)
+    public void echoMirrorsSprintAndShieldBehavior(TestContext c) {
+        var echo = c.spawnEntity(AbyssEntities.ECHO, 20, 2, 32);
+        var target = c.createMockPlayer(GameMode.SURVIVAL);
+        target.setPosition(Vec3d.ofBottomCenter(c.getAbsolutePos(new BlockPos(36, 2, 32))));
+        target.setInvulnerable(true); target.setSprinting(true); echo.setTarget(target);
+        c.waitAndRun(5, () -> {
+            c.assertEquals(echo.visualState(), 1, "Echo mirrors a sprinting target");
+            c.assertTrue(echo.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) > 0.35, "Echo gains the copied sprint speed");
+            target.setSprinting(false); target.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SHIELD));
+            target.setCurrentHand(Hand.MAIN_HAND);
+        });
+        c.waitAndRun(25, () -> {
+            c.assertEquals(echo.visualState(), 2, "Echo changes tactics when the player raises a shield");
+            echo.discard(); c.complete();
+        });
+    }
+
+    @GameTest(templateName = ARENA, tickLimit = 160)
+    public void wardenBeamDealsDamageAfterItsWindup(TestContext c) {
+        var warden = c.spawnEntity(AbyssEntities.WARDEN, 20, 2, 32);
+        var target = c.spawnMob(EntityType.COW, 34, 2, 32); target.setAiDisabled(true);
+        warden.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0);
+        warden.setTarget(target);
+        c.waitAndRun(60, () -> c.assertEquals(target.getHealth(), target.getMaxHealth(), "Beam must not deal untelegraphed immediate damage"));
+        c.waitAndRun(130, () -> {
+            c.assertTrue(target.getHealth() < target.getMaxHealth(), "Charged Warden beam hits a visible target");
+            warden.discard(); c.complete();
+        });
+    }
+
 }

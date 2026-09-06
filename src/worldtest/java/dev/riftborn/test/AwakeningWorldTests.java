@@ -153,6 +153,7 @@ public final class AwakeningWorldTests {
             case "stop_motion" -> {
                 p.setVelocity(Vec3d.ZERO);
                 p.velocityModified = true;
+                p.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket(p));
             }
             case "clear_displays" -> {
                 for (var entity : w.getOtherEntities(null, p.getBoundingBox().expand(100),
